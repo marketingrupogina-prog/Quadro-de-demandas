@@ -2884,11 +2884,41 @@
             tbody.appendChild(tr);
         });
         lucide.createIcons();
- }
-
     // Initialize System
     initCloud();
 
-</script>
+    // CORREÇÃO ENVIAR: Garante que cada computador gera uma demanda nova sem apagar a outra
+    if (typeof botao !== 'undefined') {
+      botao.addEventListener('click', () => {
+        const texto = input.value;
+        if (texto.trim() !== "") {
+          // Usa a estrutura que o seu initCloud já configurou nos bastidores
+          const novaDemandaRef = database.ref('demandas/').push(); 
+          novaDemandaRef.set({
+            conteudo: texto,
+            timestamp: Date.now()
+          });
+          input.value = ""; 
+        }
+      });
+    }
+
+    // CORREÇÃO RECEBER: Faz as duas telas lerem a lista ao mesmo tempo
+    if (typeof database !== 'undefined') {
+      database.ref('demandas/').on('value', (snapshot) => {
+        const dados = snapshot.val();
+        if (typeof mural !== 'undefined') {
+          mural.innerHTML = ""; // Limpa a tela antes de carregar a lista nova
+          if (dados) {
+            Object.keys(dados).forEach((id) => {
+              mural.innerHTML += `<p style="margin: 0; padding: 5px 0; border-bottom: 1px solid #eee;"><strong>Demanda:</strong> ${dados[id].conteudo}</p>`;
+            });
+          } else {
+            mural.innerHTML = `<p style="color: #999; font-style: italic; margin: 0;">Nenhuma demanda cadastrada no momento.</p>`;
+          }
+        }
+      });
+    }
+  </script>
 </body>
 </html>
