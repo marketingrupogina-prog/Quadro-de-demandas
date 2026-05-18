@@ -1,0 +1,2894 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketing OS Pro - Gestão Estratégica (Cloud)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .kanban-column { min-height: 75vh; transition: background-color 0.2s; }
+        .task-card { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: grab; }
+        .task-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .task-card:active { cursor: grabbing; transform: scale(0.98); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
+        
+        .is-fixed { border-left: 6px solid #4f46e5 !important; }
+        .drag-over { background-color: rgba(79, 70, 229, 0.05); border: 2px dashed #6366f1 !important; }
+        .dark .drag-over { background-color: rgba(79, 70, 229, 0.15); border-color: #818cf8 !important; }
+        
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-slideIn { animation: slideIn 0.3s ease-out forwards; }
+        
+        @keyframes pulse-border-red { 0% { border-color: #fca5a5; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { border-color: #ef4444; box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } 100% { border-color: #fca5a5; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        .is-overdue { animation: pulse-border-red 2s infinite; border-width: 2px !important; }
+        .dark .is-overdue { animation-name: pulse-border-red-dark; }
+        @keyframes pulse-border-red-dark { 0% { border-color: #991b1b; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { border-color: #ef4444; box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } 100% { border-color: #991b1b; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+
+        .custom-editor[placeholder]:empty:before { content: attr(placeholder); color: #94a3b8; pointer-events: none; }
+        .custom-editor ul { list-style-type: disc; padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
+        .custom-editor ol { list-style-type: decimal; padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
+        .custom-editor b { font-weight: 800; }
+        .custom-editor i { font-style: italic; }
+        .custom-editor u { text-decoration: underline; }
+
+        #cloud-loader { transition: opacity 0.3s; }
+        .spinner { border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; width: 20px; height: 20px; animation: spin 1s ease-in-out infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .bg-pattern { background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 20px 20px; }
+        .dark .bg-pattern { background-image: radial-gradient(#334155 1px, transparent 1px); }
+    </style>
+</head>
+<body class="text-slate-900 dark:text-slate-200 bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+
+<div id="cloud-loader" class="fixed inset-0 z-[100] bg-indigo-600 flex flex-col items-center justify-center text-white">
+    <div class="spinner mb-4"></div>
+    <h2 class="text-xl font-bold">Conectando à Nuvem...</h2>
+    <p class="text-sm text-indigo-200 mt-2">Sincronizando dados em tempo real</p>
+</div>
+
+<div class="flex h-screen overflow-hidden">
+    <aside class="w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 hidden md:flex flex-col shadow-sm transition-colors duration-300 z-40">
+        <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+            <div class="flex items-center gap-3 text-indigo-600 dark:text-indigo-400 font-extrabold text-2xl tracking-tight">
+                <div class="bg-indigo-600 text-white p-1.5 rounded-lg shadow-md shadow-indigo-200 dark:shadow-none">
+                    <i data-lucide="cloud" class="w-6 h-6"></i>
+                </div>
+                <span>MktOS<span class="text-slate-400 dark:text-slate-500 font-light">Cloud</span></span>
+            </div>
+            <div title="Sincronizado na Nuvem" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
+        </div>
+        
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
+            <button onclick="switchTab('kanban')" id="btn-kanban" class="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 font-bold transition-all">
+                <div class="flex items-center gap-3"><i data-lucide="layout-grid" class="w-5 h-5"></i> Quadro Geral</div>
+            </button>
+            <button onclick="switchTab('cycles')" id="btn-cycles" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 font-medium transition-all">
+                <i data-lucide="calendar-clock" class="w-5 h-5"></i> Gestão de Ciclos
+            </button>
+            <button onclick="switchTab('scope')" id="btn-scope" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 font-medium transition-all">
+                <i data-lucide="map" class="w-5 h-5"></i> Escopo do Setor
+            </button>
+            <button onclick="switchTab('strategy')" id="btn-strategy" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 font-medium transition-all">
+                <i data-lucide="target" class="w-5 h-5"></i> Visão Estratégica
+            </button>
+            <button onclick="switchTab('reports')" id="btn-reports" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 font-medium transition-all hidden">
+                <i data-lucide="pie-chart" class="w-5 h-5"></i> Relatórios
+            </button>
+            <button onclick="switchTab('settings')" id="btn-settings" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 font-medium transition-all hidden">
+                <i data-lucide="settings" class="w-5 h-5"></i> Configurações
+            </button>
+            
+            <div class="mt-8 mb-2 px-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Pilares do Setor</div>
+            <div id="sidebar-pillars-list" class="space-y-1"></div>
+        </nav>
+
+        <div class="p-4 bg-slate-50 dark:bg-slate-800/50 m-4 rounded-2xl border border-slate-100 dark:border-slate-800 transition-colors">
+            <div class="flex items-center justify-between mb-3">
+                <h4 class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Sua Equipe</h4>
+            </div>
+            <div id="sidebar-team-container" class="space-y-3"></div>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col min-w-0 bg-[#f8fafc] dark:bg-slate-950 overflow-hidden transition-colors duration-300">
+        <header class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-8 py-5 flex flex-col md:flex-row md:items-center justify-between sticky top-0 z-30 transition-colors">
+            <div class="flex items-center gap-4 flex-wrap">
+                <div class="mr-2">
+                    <h1 id="page-title" class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Quadro de Demandas</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 font-medium" id="page-subtitle">Acompanhamento em tempo real</p>
+                </div>
+                
+                <div class="h-8 w-[1px] bg-slate-200 dark:bg-slate-700 hidden md:block mx-2"></div>
+                
+                <div id="header-filters-container" class="flex gap-4 items-center">
+                    <div class="flex flex-col gap-1">
+                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Busca</span>
+                        <div class="relative">
+                            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"></i>
+                            <input type="text" id="filter-text" oninput="renderTasks()" placeholder="Buscar..." class="bg-slate-100 dark:bg-slate-800 border border-transparent dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-semibold rounded-xl pl-9 pr-4 py-2 focus:ring-2 focus:ring-indigo-500 outline-none w-40 transition-colors">
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Pilar</span>
+                        <select id="filter-area" onchange="renderTasks()" class="bg-slate-100 dark:bg-slate-800 border border-transparent dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-semibold rounded-xl px-4 py-2 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer transition-colors max-w-[150px]">
+                            <option value="all">Todas Áreas</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Responsável</span>
+                        <select id="filter-owner" onchange="renderTasks()" class="bg-slate-100 dark:bg-slate-800 border border-transparent dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-semibold rounded-xl px-4 py-2 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer transition-colors min-w-[100px]">
+                            <option value="all">Todos</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Ciclo</span>
+                        <select id="filter-cycle" onchange="renderTasks()" class="bg-slate-100 dark:bg-slate-800 border border-transparent dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-semibold rounded-xl px-4 py-2 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer transition-colors min-w-[120px]">
+                            <option value="all">Todos Ciclos</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 mt-4 md:mt-0">
+                <div id="view-toggle-container" class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 mr-2 transition-colors">
+                    <button onclick="changeView('kanban')" id="view-btn-kanban" class="p-1.5 rounded-lg bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-400 transition-all" title="Ver como Quadro"><i data-lucide="kanban" class="w-4 h-4"></i></button>
+                    <button onclick="changeView('list')" id="view-btn-list" class="p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-all" title="Ver como Lista"><i data-lucide="list" class="w-4 h-4"></i></button>
+                </div>
+
+                <div class="relative mr-2">
+                    <button onclick="toggleNotifications()" id="btn-notifications" class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition-colors border border-slate-200 dark:border-slate-700" title="Notificações">
+                        <div class="relative">
+                            <i data-lucide="bell" class="w-5 h-5 text-slate-600 dark:text-slate-400"></i>
+                            <span id="notification-badge" class="absolute -top-1.5 -right-1.5 flex h-3 w-3 hidden">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-3 w-3 bg-rose-500 border-2 border-slate-100 dark:border-slate-800"></span>
+                            </span>
+                        </div>
+                    </button>
+                    <div id="notifications-dropdown" class="hidden absolute right-0 mt-3 w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-slate-700 z-[70] overflow-hidden">
+                        <div class="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center">
+                            <h3 class="font-bold text-slate-800 dark:text-white text-sm">Notificações</h3>
+                            <button onclick="markAllNotificationsAsRead()" class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">Marcar como lidas</button>
+                        </div>
+                        <div id="notifications-list" class="max-h-80 overflow-y-auto custom-scrollbar flex flex-col divide-y divide-slate-100 dark:divide-slate-700">
+                            <!-- Injetado via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="shareApp(this)" class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition-colors border border-slate-200 dark:border-slate-700 mr-2" title="Copiar Link para Compartilhar">
+                    <i data-lucide="share-2" class="w-5 h-5 text-slate-600 dark:text-slate-400"></i>
+                </button>
+
+                <button onclick="toggleTheme()" id="theme-toggle-btn" class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition-colors border border-slate-200 dark:border-slate-700 mr-2" title="Alternar Tema">
+                    <i data-lucide="moon" class="w-5 h-5 text-slate-600 dark:text-slate-400"></i>
+                </button>
+
+                <button onclick="openTaskModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 text-sm font-bold transition-all shadow-lg shadow-indigo-200 dark:shadow-none active:scale-95">
+                    <i data-lucide="plus-circle" class="w-5 h-5"></i> Nova Demanda
+                </button>
+            </div>
+        </header>
+
+        <div id="content-container" class="flex-1 overflow-x-auto p-6 md:p-8 custom-scrollbar relative">
+            
+            <div id="tab-kanban" class="h-full">
+                <div id="kanban-container" class="flex gap-6 min-w-max h-full">
+                    <div class="w-80 flex flex-col gap-4">
+                        <div class="flex items-center justify-between px-2">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600 shadow-[0_0_8px_rgba(203,213,225,0.8)] dark:shadow-none"></div>
+                                <h3 class="font-bold text-slate-700 dark:text-slate-200">A Fazer</h3>
+                            </div>
+                            <span id="count-backlog" class="bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold px-2.5 py-1 rounded-full">0</span>
+                        </div>
+                        <div id="col-backlog" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" class="kanban-column flex flex-col gap-4 p-2 rounded-2xl border-2 border-transparent"></div>
+                    </div>
+                    <div class="w-80 flex flex-col gap-4">
+                        <div class="flex items-center justify-between px-2">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)] dark:shadow-none"></div>
+                                <h3 class="font-bold text-slate-700 dark:text-slate-200">Em Execução</h3>
+                            </div>
+                            <span id="count-todo" class="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold px-2.5 py-1 rounded-full">0</span>
+                        </div>
+                        <div id="col-todo" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" class="kanban-column flex flex-col gap-4 p-2 rounded-2xl border-2 border-transparent"></div>
+                    </div>
+                    <div class="w-80 flex flex-col gap-4">
+                        <div class="flex items-center justify-between px-2">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)] dark:shadow-none"></div>
+                                <h3 class="font-bold text-slate-700 dark:text-slate-200">Aguardando Revisão</h3>
+                            </div>
+                            <span id="count-review" class="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-[10px] font-bold px-2.5 py-1 rounded-full">0</span>
+                        </div>
+                        <div id="col-review" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" class="kanban-column flex flex-col gap-4 p-2 rounded-2xl border-2 border-transparent"></div>
+                    </div>
+                    <div class="w-80 flex flex-col gap-4">
+                        <div class="flex items-center justify-between px-2">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] dark:shadow-none"></div>
+                                <h3 class="font-bold text-slate-700 dark:text-slate-200">Concluído</h3>
+                            </div>
+                            <span id="count-done" class="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold px-2.5 py-1 rounded-full">0</span>
+                        </div>
+                        <div id="col-done" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" class="kanban-column flex flex-col gap-4 p-2 rounded-2xl border-2 border-transparent"></div>
+                    </div>
+                </div>
+
+                <div id="list-container" class="hidden h-full">
+                    <div class="bg-white dark:bg-slate-900 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm whitespace-nowrap">
+                                <thead class="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
+                                    <tr>
+                                        <th class="px-6 py-4 font-bold tracking-wider uppercase text-[10px]">Demanda / Tarefa</th>
+                                        <th class="px-6 py-4 font-bold tracking-wider uppercase text-[10px]">Responsável</th>
+                                        <th class="px-6 py-4 font-bold tracking-wider uppercase text-[10px]">Pilar</th>
+                                        <th class="px-6 py-4 font-bold tracking-wider uppercase text-[10px]">Status</th>
+                                        <th class="px-6 py-4 font-bold tracking-wider uppercase text-[10px]">Prazo</th>
+                                        <th class="px-6 py-4 font-bold tracking-wider uppercase text-[10px]">Ciclo</th>
+                                        <th class="px-6 py-4 font-bold tracking-wider uppercase text-[10px]">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="list-body" class="divide-y divide-slate-100 dark:divide-slate-800/50"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-cycles" class="hidden animate-slideIn h-full">
+                <div class="max-w-7xl mx-auto pb-20">
+                    
+                    <!-- Cycle Selector Header -->
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 bg-white dark:bg-slate-900 p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-800 bg-pattern relative overflow-hidden">
+                        <div class="relative z-10 w-full md:w-auto">
+                            <p class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2"><i data-lucide="radar" class="w-4 h-4 text-indigo-500"></i> Hub Central do Período</p>
+                            <div class="flex items-center gap-3">
+                                <select id="dashboard-cycle-select" onchange="renderCyclesDashboard()" class="text-3xl font-black text-slate-800 dark:text-white bg-transparent border-none outline-none cursor-pointer appearance-none pr-8 bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-right hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                                    <!-- Populated via JS -->
+                                </select>
+                            </div>
+                            <div id="cycle-dates-display" class="mt-2 text-sm font-medium text-slate-500 flex items-center gap-2"></div>
+                        </div>
+                        <div class="relative z-10 shrink-0 w-full md:w-auto flex flex-col md:items-end">
+                            <button onclick="openManageCyclesModal()" id="btn-manage-cycles" class="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 px-5 py-2.5 rounded-xl text-sm font-bold transition-colors inline-flex items-center gap-2 shadow-sm mb-4 hidden">
+                                <i data-lucide="settings-2" class="w-4 h-4"></i> Gerenciar Ciclos
+                            </button>
+                            <div id="cycle-progress-ring" class="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/80 px-5 py-3 rounded-2xl border border-slate-200 dark:border-slate-700"></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- Left Col: Mural de Avisos -->
+                        <div class="lg:col-span-1 space-y-6">
+                            <div class="bg-amber-50 dark:bg-amber-900/10 p-6 md:p-8 rounded-[2rem] border border-amber-200 dark:border-amber-900/30 shadow-sm relative overflow-hidden h-full flex flex-col">
+                                <div class="absolute -right-6 -top-6 text-amber-200 dark:text-amber-900/20"><i data-lucide="bell-ring" class="w-32 h-32"></i></div>
+                                <div class="relative z-10 flex justify-between items-center mb-6">
+                                    <h3 class="text-xl font-extrabold text-amber-800 dark:text-amber-400 flex items-center gap-2"><i data-lucide="megaphone" class="w-5 h-5"></i> Mural de Avisos</h3>
+                                </div>
+                                <div id="cycle-notices-container" class="relative z-10 space-y-3 flex-1 overflow-y-auto custom-scrollbar pr-2 min-h-[200px]">
+                                    <!-- Injetado via JS -->
+                                </div>
+                                <form id="form-add-notice" onsubmit="addCycleNotice(event)" class="relative z-10 mt-6 pt-4 border-t border-amber-200 dark:border-amber-900/50 hidden">
+                                    <div class="flex gap-2">
+                                        <input type="text" id="new-notice-input" required placeholder="Novo aviso para este ciclo..." class="flex-1 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700/50 text-slate-800 dark:text-slate-200 text-sm font-medium rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-amber-500 shadow-sm">
+                                        <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-2 rounded-xl transition-colors shadow-sm"><i data-lucide="send" class="w-4 h-4"></i></button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Right Col: Demandas do Ciclo -->
+                        <div class="lg:col-span-2 space-y-8">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-xl font-extrabold text-slate-800 dark:text-white flex items-center gap-2"><i data-lucide="layers" class="w-5 h-5 text-indigo-500"></i> Ações do Ciclo por Pilar</h3>
+                                <div class="flex gap-4 text-xs font-bold">
+                                    <span class="flex items-center gap-1 text-slate-500"><div class="w-2 h-2 rounded-full bg-slate-300"></div> Pendente</span>
+                                    <span class="flex items-center gap-1 text-emerald-600"><div class="w-2 h-2 rounded-full bg-emerald-500"></div> Concluído</span>
+                                </div>
+                            </div>
+                            
+                            <div id="cycle-pillars-tasks" class="space-y-6">
+                                <!-- Injetado via JS agrupado por Pilar -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-scope" class="hidden animate-slideIn h-full">
+                <div class="max-w-7xl mx-auto pb-20">
+                    <div class="text-center mb-12">
+                        <h2 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight uppercase">Mapa de Responsabilidades</h2>
+                        <div class="h-1.5 w-24 bg-indigo-600 mx-auto mt-4 rounded-full"></div>
+                        <p class="text-slate-500 dark:text-slate-400 mt-4 font-medium uppercase text-xs tracking-widest">Estrutura Visual do Setor de Marketing</p>
+                        <div id="add-pillar-scope-container"></div>
+                    </div>
+                    <div class="relative overflow-x-auto p-4 custom-scrollbar">
+                        <div class="min-w-[1000px] flex flex-col items-center gap-16 py-10">
+                            <div class="bg-indigo-600 text-white px-10 py-6 rounded-3xl shadow-2xl shadow-indigo-200 dark:shadow-none border-4 border-white dark:border-slate-900 z-10 transition-colors">
+                                <span class="text-xl font-black tracking-tighter uppercase">Marketing</span>
+                            </div>
+                            <div id="scope-map-grid" class="grid grid-cols-4 gap-8 w-full relative"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-strategy" class="hidden animate-slideIn h-full">
+                <div class="max-w-7xl mx-auto pb-20">
+                    <div class="mb-8">
+                        <h2 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight">Painel Estratégico</h2>
+                        <p class="text-slate-500 dark:text-slate-400 mt-2 font-medium">Acompanhamento de Metas, Projetos e Inovações sincronizado na nuvem</p>
+                    </div>
+                    <div id="strategy-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-8"></div>
+                </div>
+            </div>
+
+            <div id="tab-reports" class="hidden animate-slideIn h-full">
+                <div class="max-w-7xl mx-auto pb-20">
+                    <div class="mb-8">
+                        <h2 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight">Dashboard de Desempenho</h2>
+                        <p class="text-slate-500 dark:text-slate-400 mt-2 font-medium">Métricas em tempo real lidas direto da nuvem</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" id="report-kpis"></div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 dark:border-slate-700">
+                            <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2"><i data-lucide="bar-chart-2" class="w-5 h-5 text-indigo-500"></i> Esforço por Pilar</h3>
+                            <div id="report-pillars" class="space-y-4"></div>
+                        </div>
+                        <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 dark:border-slate-700">
+                            <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2"><i data-lucide="users" class="w-5 h-5 text-emerald-500"></i> Produtividade da Equipe</h3>
+                            <div id="report-team" class="space-y-4"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-settings" class="hidden animate-slideIn h-full">
+                <div class="max-w-7xl mx-auto pb-20">
+                    <div class="mb-8">
+                        <h2 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight">Configurações da Nuvem</h2>
+                        <p class="text-slate-500 dark:text-slate-400 mt-2 font-medium">Edições feitas aqui serão aplicadas para todos os usuários com acesso ao painel.</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col h-full">
+                            <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2"><i data-lucide="users" class="w-5 h-5 text-indigo-500"></i> Membros da Equipe</h3>
+                            <div id="settings-team-list" class="space-y-3 mb-6 flex-1 overflow-y-auto custom-scrollbar pr-2 max-h-60"></div>
+                            <form onsubmit="addTeamMember(event)" class="mt-auto pt-4 border-t border-slate-100 dark:border-slate-700">
+                                <h4 class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Adicionar Novo</h4>
+                                <div class="flex gap-2">
+                                    <input type="text" id="new-team-name" required placeholder="Nome do integrante" class="flex-[2] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm font-medium rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <input type="text" id="new-team-initials" required placeholder="Sigla" maxlength="3" class="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm font-medium rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-500 uppercase text-center">
+                                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl transition-colors"><i data-lucide="plus" class="w-5 h-5"></i></button>
+                                </div>
+                            </form>
+                            <div class="mt-6 pt-6 border-t border-slate-100 dark:border-slate-700">
+                                <h4 class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-1"><i data-lucide="lock" class="w-3 h-3"></i> Senha de Acesso (Gestor)</h4>
+                                <div class="flex gap-2">
+                                    <input type="text" id="update-manager-pwd" placeholder="Nova senha (padrão: 8591)" class="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm font-medium rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <button type="button" onclick="changeManagerPassword()" class="bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white px-4 py-2 rounded-xl transition-colors text-xs font-bold shadow-sm">Salvar</button>
+                                </div>
+                                <p id="pwd-success-msg" class="text-[10px] text-emerald-500 font-bold mt-2 hidden">Senha atualizada com sucesso na nuvem!</p>
+                            </div>
+                        </div>
+
+                        <!-- O painel de Ciclos agora direciona para a nova Aba -->
+                        <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center text-center h-full">
+                            <div class="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-4">
+                                <i data-lucide="calendar-clock" class="w-8 h-8"></i>
+                            </div>
+                            <h3 class="text-xl font-extrabold text-slate-800 dark:text-white mb-2">Gestão de Ciclos Evoluída</h3>
+                            <p class="text-sm text-slate-500 dark:text-slate-400 mb-6 max-w-sm">Os ciclos agora possuem um Hub Central próprio com controle de datas, visão em raio-x e mural de avisos.</p>
+                            <button onclick="switchTab('cycles')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-md shadow-indigo-200 dark:shadow-none">Acessar Novo Painel de Ciclos</button>
+                        </div>
+
+                        <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 dark:border-slate-700 mt-8">
+                            <div class="flex items-center justify-between mb-6">
+                                <div>
+                                    <h3 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2"><i data-lucide="map" class="w-5 h-5 text-amber-500"></i> Editor de Escopo do Setor</h3>
+                                    <p class="text-xs text-slate-500 font-medium mt-1">Altere os pilares e itens que aparecem no mapa mental</p>
+                                </div>
+                                <button onclick="openNewPillarModal()" class="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/50 px-4 py-2 rounded-xl text-sm font-bold transition-colors flex items-center gap-2">
+                                    <i data-lucide="plus" class="w-4 h-4"></i> Novo Pilar
+                                </button>
+                            </div>
+                            <div id="settings-scope-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6"></div>
+                        </div>
+
+                        <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 dark:border-slate-700 mt-8">
+                            <div class="flex items-center justify-between mb-6">
+                                <div>
+                                    <h3 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2"><i data-lucide="target" class="w-5 h-5 text-rose-500"></i> Editor de Visão Estratégica</h3>
+                                    <p class="text-xs text-slate-500 font-medium mt-1">Configure os grandes projetos e metas que aparecem no Painel Estratégico.</p>
+                                </div>
+                                <button onclick="openStrategyModal()" class="bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 hover:bg-rose-200 dark:hover:bg-rose-900/50 px-4 py-2 rounded-xl text-sm font-bold transition-colors flex items-center gap-2">
+                                    <i data-lucide="plus" class="w-4 h-4"></i> Nova Área Estratégica
+                                </button>
+                            </div>
+                            <div id="settings-strategy-list" class="space-y-4"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<div id="modal-task" class="fixed inset-0 bg-slate-900/60 dark:bg-black/60 backdrop-blur-md hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-[2rem] w-full max-w-2xl shadow-2xl animate-slideIn overflow-hidden max-h-[90vh] flex flex-col border border-slate-100 dark:border-slate-800">
+        <div class="p-6 md:p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
+            <div>
+                <h3 id="modal-title" class="font-extrabold text-2xl text-slate-800 dark:text-white">Nova Demanda</h3>
+                <p id="modal-subtitle" class="text-xs text-slate-500 dark:text-slate-400 font-medium">Instrua a equipe com clareza</p>
+            </div>
+            <button type="button" onclick="closeTaskModal()" class="w-10 h-10 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        
+        <form id="task-form" onsubmit="submitTaskForm(event)" class="p-6 md:p-8 space-y-6 overflow-y-auto custom-scrollbar">
+            <input type="hidden" id="edit-task-id" value="">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Título da Atividade</label>
+                    <input type="text" id="task-title" required class="w-full px-5 py-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 focus:border-indigo-500 outline-none transition-all text-lg font-semibold" placeholder="Ex: Criar carrossel do ciclo">
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Instruções (Briefing)</label>
+                    <div class="border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden bg-white dark:bg-slate-800 focus-within:ring-4 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-900/30 focus-within:border-indigo-500 transition-all flex flex-col">
+                        <div class="flex items-center gap-1 p-2 border-b border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-800/50">
+                            <button type="button" onclick="formatText('bold')" class="w-8 h-8 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300 transition-colors" title="Negrito"><i data-lucide="bold" class="w-4 h-4"></i></button>
+                            <button type="button" onclick="formatText('italic')" class="w-8 h-8 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300 transition-colors" title="Itálico"><i data-lucide="italic" class="w-4 h-4"></i></button>
+                            <button type="button" onclick="formatText('underline')" class="w-8 h-8 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300 transition-colors" title="Sublinhado"><i data-lucide="underline" class="w-4 h-4"></i></button>
+                            <div class="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1"></div>
+                            <button type="button" onclick="formatText('insertUnorderedList')" class="w-8 h-8 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300 transition-colors" title="Lista com Marcadores"><i data-lucide="list" class="w-4 h-4"></i></button>
+                            <button type="button" onclick="formatText('insertOrderedList')" class="w-8 h-8 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300 transition-colors" title="Lista Numerada"><i data-lucide="list-ordered" class="w-4 h-4"></i></button>
+                        </div>
+                        <div id="task-desc" contenteditable="true" class="w-full px-5 py-4 outline-none min-h-[120px] text-sm text-slate-800 dark:text-slate-200 custom-editor" placeholder="Explique detalhadamente o que precisa ser feito..."></div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Pilar</label>
+                    <select id="task-area" class="w-full px-5 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 outline-none appearance-none font-medium"></select>
+                </div>
+                
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Prioridade</label>
+                    <select id="task-priority" class="w-full px-5 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 outline-none font-medium">
+                        <option value="routine">📅 Rotina Fluxo</option>
+                        <option value="important">⚡ Importante</option>
+                        <option value="critical">🔥 Crítico / Hoje</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Responsável</label>
+                    <select id="task-owner" class="w-full px-5 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 outline-none font-medium"></select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Ciclo</label>
+                    <select id="task-cycle" class="w-full px-5 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 outline-none font-medium"></select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Prazo de Entrega</label>
+                    <input type="date" id="task-due-date" class="w-full px-5 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 outline-none font-medium">
+                </div>
+            </div>
+
+            <div class="bg-indigo-50/50 dark:bg-indigo-900/10 p-6 rounded-3xl border border-indigo-100 dark:border-indigo-900/30">
+                <label class="block text-[10px] font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mb-3">Checklist de Execução (Passo a passo)</label>
+                <div id="checklist-items" class="space-y-2 mb-3"></div>
+                <div class="flex gap-2">
+                    <input type="text" id="new-check-item" class="flex-1 px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-900/50 text-slate-800 dark:text-slate-200 text-sm outline-none" placeholder="Adicionar etapa...">
+                    <button type="button" onclick="addChecklistItem()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors">Add</button>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-800">
+                <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                    <i data-lucide="link" class="w-3.5 h-3.5"></i> Links e Anexos
+                </label>
+                <div id="modal-links-list" class="flex flex-wrap gap-2 mb-3"></div>
+                <div class="flex flex-col md:flex-row gap-2">
+                    <input type="text" id="new-link-title" class="flex-1 px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm outline-none" placeholder="Título (Ex: Link do Canva)">
+                    <input type="url" id="new-link-url" class="flex-[2] px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm outline-none" placeholder="Cole a URL aqui (https://...)">
+                    <button type="button" onclick="addTaskLink()" class="bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors">Anexar</button>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                <input type="checkbox" id="task-is-fixed" class="w-5 h-5 rounded-lg text-indigo-600 border-slate-300 dark:border-slate-600 focus:ring-indigo-500 dark:bg-slate-700">
+                <label for="task-is-fixed" class="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer flex items-center gap-2">
+                    <i data-lucide="pin" class="w-4 h-4"></i> Tarefa Fixa (Recorrente de Ciclo a Ciclo)
+                </label>
+            </div>
+
+            <div id="task-chat-section" class="hidden flex-col bg-slate-50 dark:bg-slate-800/80 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 mt-6 min-h-[300px] max-h-[400px]">
+                <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <i data-lucide="message-square" class="w-4 h-4 text-indigo-500"></i> Histórico e Feedbacks
+                </label>
+                <div id="task-chat-messages" class="flex-1 overflow-y-auto custom-scrollbar space-y-4 mb-4 pr-2 flex flex-col"></div>
+                <div class="flex gap-2 mt-auto pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <input type="text" id="new-chat-message" class="flex-1 px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-slate-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow" placeholder="Escreva um comentário ou atualização..." onkeypress="handleChatKeyPress(event)">
+                    <button type="button" onclick="addTaskComment()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-md shadow-indigo-200 dark:shadow-none active:scale-95">
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="pt-4 flex gap-4">
+                <button type="button" onclick="closeTaskModal()" class="flex-1 px-6 py-4 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-2xl font-bold transition-colors">Cancelar</button>
+                <button type="submit" id="submit-btn-text" class="flex-[2] px-6 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-extrabold shadow-xl shadow-indigo-200 dark:shadow-none transition-all">Criar Demanda</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modal-manage-cycles" class="fixed inset-0 bg-slate-900/60 dark:bg-black/60 backdrop-blur-md hidden flex items-center justify-center z-[60] p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-[2rem] w-full max-w-2xl shadow-2xl animate-slideIn overflow-hidden max-h-[90vh] flex flex-col border border-slate-100 dark:border-slate-800">
+        <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
+            <div>
+                <h3 class="font-extrabold text-xl text-slate-800 dark:text-white flex items-center gap-2"><i data-lucide="calendar-days" class="w-5 h-5 text-indigo-500"></i> Gestão de Ciclos</h3>
+                <p class="text-xs text-slate-500 mt-1">Crie, edite as datas e exclua ciclos do sistema.</p>
+            </div>
+            <button type="button" onclick="closeManageCyclesModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 flex items-center justify-center transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        
+        <div class="flex flex-col md:flex-row h-[500px]">
+            <!-- List of Cycles -->
+            <div class="w-full md:w-1/2 border-r border-slate-100 dark:border-slate-800 flex flex-col">
+                <div class="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30">
+                    <h4 class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Ciclos Cadastrados</h4>
+                </div>
+                <div id="manage-cycles-list" class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+            
+            <!-- Edit/Create Cycle Form -->
+            <div class="w-full md:w-1/2 bg-slate-50 dark:bg-slate-800/30 flex flex-col p-6 relative">
+                <form id="form-edit-cycle" onsubmit="saveCycleDetails(event)" class="space-y-4 h-full flex flex-col">
+                    <input type="hidden" id="edit-cycle-original-name" value="">
+                    
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">Nome do Ciclo</label>
+                        <input type="text" id="edit-cycle-name" required class="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold" placeholder="Ex: Ciclo 04 - Mês das Mães">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">Data de Início</label>
+                            <input type="date" id="edit-cycle-start" class="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">Data de Fim</label>
+                            <input type="date" id="edit-cycle-end" class="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm">
+                        </div>
+                    </div>
+                    
+                    <div class="mt-auto pt-4 border-t border-slate-200 dark:border-slate-700 flex gap-2">
+                        <button type="button" onclick="prepareNewCycle()" class="flex-1 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl text-xs font-bold transition-colors">Limpar / Novo</button>
+                        <button type="submit" class="flex-[2] px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-extrabold shadow-md shadow-indigo-200 dark:shadow-none transition-all">Salvar Ciclo</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal-strategy" class="fixed inset-0 bg-slate-900/60 dark:bg-black/60 backdrop-blur-md hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-[2rem] w-full max-w-xl shadow-2xl animate-slideIn overflow-hidden max-h-[90vh] flex flex-col border border-slate-100 dark:border-slate-800">
+        <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
+            <div><h3 id="modal-strategy-title" class="font-extrabold text-xl text-slate-800 dark:text-white">Nova Área Estratégica</h3></div>
+            <button type="button" onclick="closeStrategyModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <form id="strategy-form" onsubmit="submitStrategyForm(event)" class="p-6 space-y-6 overflow-y-auto custom-scrollbar">
+            <input type="hidden" id="edit-strategy-id" value="">
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Título da Área</label>
+                <input type="text" id="strat-title" required class="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-semibold" placeholder="Ex: Expansão de Canais">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Ícone (Nome Lucide)</label>
+                    <input type="text" id="strat-icon" required value="target" class="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="Ex: target, star, users">
+                    <a href="https://lucide.dev/icons" target="_blank" class="text-[9px] text-indigo-500 hover:underline mt-1 inline-block">Ver lista de ícones</a>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Cor Tema</label>
+                    <select id="strat-color" class="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                        <option value="rose">Rosa (Rose)</option>
+                        <option value="blue">Azul (Blue)</option>
+                        <option value="emerald">Verde (Emerald)</option>
+                        <option value="amber">Amarelo (Amber)</option>
+                        <option value="purple">Roxo (Purple)</option>
+                        <option value="indigo">Índigo (Indigo)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+                <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">Objetivos Iniciais (OKRs)</label>
+                <div id="strat-objectives-list" class="space-y-2 mb-3"></div>
+                <div class="flex gap-2">
+                    <input type="text" id="new-strat-obj" class="flex-1 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-slate-200 text-xs outline-none" placeholder="Adicionar objetivo...">
+                    <button type="button" onclick="addStrategyObjective()" class="bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">Add</button>
+                </div>
+            </div>
+            <div class="pt-2 flex gap-3">
+                <button type="button" onclick="closeStrategyModal()" class="flex-1 px-4 py-3 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl font-bold transition-colors">Cancelar</button>
+                <button type="submit" id="submit-strat-btn" class="flex-[2] px-4 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-extrabold shadow-md shadow-rose-200 dark:shadow-none transition-all">Salvar Área</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modal-password" class="fixed inset-0 bg-slate-900/60 dark:bg-black/60 backdrop-blur-md hidden flex items-center justify-center z-[60] p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-[2rem] w-full max-w-sm shadow-2xl animate-slideIn overflow-hidden border border-slate-100 dark:border-slate-800 text-center">
+        <div class="p-8">
+            <div class="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-600 dark:text-indigo-400 shadow-inner">
+                <i data-lucide="lock" class="w-8 h-8"></i>
+            </div>
+            <h3 class="font-extrabold text-xl text-slate-800 dark:text-white mb-2">Acesso Restrito</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mb-6">Digite a senha de Gestor para acessar as Configurações e o Painel Estratégico.</p>
+            <form onsubmit="submitManagerPassword(event)" class="space-y-4">
+                <div>
+                    <input type="password" id="manager-password-input" required class="w-full px-5 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 focus:border-indigo-500 outline-none transition-all text-center tracking-[0.5em] font-black text-lg" placeholder="••••">
+                    <p id="pwd-error-msg" class="text-[10px] text-rose-500 font-bold mt-2 hidden animate-slideIn">Senha incorreta. Tente novamente.</p>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="closePasswordModal()" class="flex-1 px-4 py-3 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl font-bold transition-colors">Cancelar</button>
+                    <button type="submit" class="flex-1 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-extrabold shadow-md shadow-indigo-200 dark:shadow-none transition-all">Desbloquear</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="modal-pillar" class="fixed inset-0 bg-slate-900/60 dark:bg-black/60 backdrop-blur-md hidden flex items-center justify-center z-[60] p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-[2rem] w-full max-w-md shadow-2xl animate-slideIn overflow-hidden border border-slate-100 dark:border-slate-800">
+        <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
+            <h3 id="modal-pillar-title-text" class="font-extrabold text-xl text-slate-800 dark:text-white">Novo Pilar do Setor</h3>
+            <button type="button" onclick="closePillarModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 flex items-center justify-center transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <form onsubmit="submitPillarForm(event)" class="p-6 space-y-4">
+            <input type="hidden" id="edit-pillar-idx" value="">
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Nome do Pilar</label>
+                <input type="text" id="new-pillar-title" required class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow font-semibold" placeholder="Ex: Tráfego Pago">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Cor Tema</label>
+                <select id="new-pillar-color" class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow">
+                    <option value="blue">Azul (Blue)</option>
+                    <option value="emerald">Verde (Emerald)</option>
+                    <option value="purple">Roxo (Purple)</option>
+                    <option value="amber">Amarelo (Amber)</option>
+                    <option value="rose">Rosa (Rose)</option>
+                    <option value="indigo">Índigo (Indigo)</option>
+                    <option value="cyan">Ciano (Cyan)</option>
+                    <option value="fuchsia">Fúcsia (Fuchsia)</option>
+                </select>
+            </div>
+            <div class="pt-4 flex gap-3">
+                <button type="button" onclick="closePillarModal()" class="flex-1 px-4 py-3 border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl font-bold transition-colors">Cancelar</button>
+                <button type="submit" id="submit-pillar-btn" class="flex-1 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-extrabold shadow-md shadow-indigo-200 dark:shadow-none transition-all">Adicionar Pilar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modal-subitem" class="fixed inset-0 bg-slate-900/60 dark:bg-black/60 backdrop-blur-md hidden flex items-center justify-center z-[70] p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-[2rem] w-full max-w-sm shadow-2xl animate-slideIn overflow-hidden border border-slate-100 dark:border-slate-800">
+        <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
+            <h3 class="font-extrabold text-lg text-slate-800 dark:text-white flex items-center gap-2"><i data-lucide="git-branch" class="w-4 h-4 text-indigo-500"></i> Nova Ramificação</h3>
+            <button type="button" onclick="closeSubitemModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 flex items-center justify-center transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <form onsubmit="submitSubitem(event)" class="p-6 space-y-4">
+            <input type="hidden" id="subitem-p-idx" value="">
+            <input type="hidden" id="subitem-i-idx" value="">
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Nome do Sub-item</label>
+                <input type="text" id="subitem-text" required class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow font-semibold" placeholder="Ex: Criação de Artes">
+            </div>
+            <div class="pt-4 flex gap-3">
+                <button type="button" onclick="closeSubitemModal()" class="flex-1 px-4 py-3 border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl font-bold transition-colors">Cancelar</button>
+                <button type="submit" class="flex-1 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-extrabold shadow-md shadow-indigo-200 dark:shadow-none transition-all">Adicionar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'mkt-os-pro';
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { };
+    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+    let app, auth, db;
+    let isCloudActive = false;
+
+    try {
+        if (Object.keys(firebaseConfig).length > 0) {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            isCloudActive = true;
+        } else {
+            console.warn("Firebase config não encontrada. Rodando em modo local offline.");
+        }
+    } catch(e) { console.error("Firebase init erro", e); }
+
+    const CURRENT_USER_KEY = 'mkt_os_pro_current_user';
+    let currentUserRole = localStorage.getItem(CURRENT_USER_KEY);
+    let gestorUnlocked = false;
+    let initialAuthCheckDone = false;
+
+    let tasks = [];
+    let strategyData = [];
+    let sysSettings = { team: [], cycles: [], scope: [] };
+    
+    let currentChecklist = [];
+    let currentLinks = []; 
+    let currentStrategyObjectives = [];
+    let currentViewMode = 'kanban'; 
+    let notifications = [];
+
+    // --- DATA STRUCTURE FOR CYCLES ---
+    // Instead of just strings, cycles are now objects.
+    const INITIAL_CYCLES = [
+        { name: "Geral", startDate: "", endDate: "", notices: [] },
+        { name: "Ciclo 01", startDate: "2024-01-01", endDate: "2024-01-21", notices: ["Planejamento anual focado no primeiro tri."] },
+        { name: "Ciclo 02", startDate: "2024-01-22", endDate: "2024-02-11", notices: ["Foco em liquidação de verão."] }
+    ];
+
+    window.formatText = function(command) {
+        document.execCommand(command, false, null);
+        document.getElementById('task-desc').focus();
+    };
+
+    function stripHtml(html) {
+        if(!html) return '';
+        let tmp = document.createElement("DIV");
+        tmp.innerHTML = html;
+        return tmp.textContent || tmp.innerText || "";
+    }
+
+    const INITIAL_SETTINGS = {
+        managerPassword: '8591',
+        cycles: INITIAL_CYCLES,
+        team: [ { id: 'aprendiz', name: 'Auxiliar Aprendiz', initials: 'AP' }, { id: 'gestor', name: 'Eu (Gestor)', initials: 'VC' } ],
+        scope: [
+            { 
+                id: 'regional', title: 'Marketing Regional', color: 'blue', 
+                items: [
+                    { text: 'Planejamento Estratégico', subitems: ['Planejamento mensal e por ciclo', 'Definição de foco do ciclo', 'Organização de campanhas regionais', 'Criação de calendário de ações', 'Gestão do orçamento de marketing regional', 'Desenvolvimento de estratégias de captação e retenção'] },
+                    { text: 'Relatórios e Performance', subitems: ['Relatório de resultados de campanhas', 'Mensuração de alcance e engajamento', 'Análise de fluxo em loja', 'Avaliação de retorno das ações executadas', 'Controle de indicadores e metas'] }
+                ] 
+            },
+            { 
+                id: 'venda-direta', title: 'Venda Direta', color: 'rose', 
+                items: [
+                    { text: 'Estratégia e Relacionamento', subitems: ['Planejamento de ações para revendedores', 'Estratégias de retenção de revendedores', 'Campanhas de incentivo', 'Divulgação de oportunidades e benefícios', 'Comunicação de foco do ciclo'] },
+                    { text: 'Conteúdo e Redes Sociais', subitems: ['Criação de conteúdo para venda direta', 'Desenvolvimento de artes e materiais', 'Produção de vídeos', 'Planejamento de postagens', 'Gestão das redes sociais da venda direta'] },
+                    { text: 'Eventos e Captação', subitems: ['Organização de encontros e ações de relacionamento', 'Eventos de captação de novos revendedores', 'Divulgação de campanhas e lançamentos'] },
+                    { text: 'Resultados', subitems: ['Relatório de desempenho das ações', 'Acompanhamento de crescimento e engajamento', 'Controle de resultados por campanha'] },
+                    { text: 'Tráfego Pago', subitems: ['Planejamento de campanhas patrocinadas', 'Gestão de anúncios', 'Segmentação de público', 'Acompanhamento de métricas', 'Otimização de campanhas'] }
+                ] 
+            },
+            { 
+                id: 'lojas', title: 'Lojas Físicas', color: 'emerald', 
+                items: [
+                    { text: 'Planejamento e Ativação', subitems: ['Planejamento de ações em loja', 'Organização de campanhas promocionais', 'Desenvolvimento de ativações comerciais', 'Apoio em ações sazonais e lançamentos'] },
+                    { text: 'Redes Sociais', subitems: ['Criação de conteúdo para lojas', 'Planejamento de calendário de postagens', 'Padronização visual das redes sociais', 'Produção de artes e vídeos', 'Fortalecimento da presença digital das unidades'] },
+                    { text: 'Mídia e Divulgação', subitems: ['Acompanhamento de mídia externa', 'Gestão de outdoor, painel de LED e rádio', 'Apoio em campanhas regionais', 'Organização de materiais de divulgação'] },
+                    { text: 'Relatórios', subitems: ['Relatório de resultados das ações', 'Acompanhamento de desempenho digital', 'Mensuração de alcance e retorno das campanhas'] }
+                ] 
+            },
+            { 
+                id: 'endo', title: 'Endomarketing', color: 'purple', 
+                items: [
+                    { text: 'Comunicação Interna', subitems: ['Planejamento de ações internas', 'Organização de campanhas motivacionais', 'Comunicação com equipes', 'Desenvolvimento de materiais internos'] },
+                    { text: 'Conteúdo e Materiais', subitems: ['Criação de artes internas', 'Edição de vídeos', 'Produção de comunicados e campanhas', 'Gestão da rede social interna (quando aplicável)'] },
+                    { text: 'Execução de Ações', subitems: ['Realização de eventos internos', 'Datas comemorativas', 'Campanhas de incentivo', 'Ações de engajamento das equipes'] }
+                ] 
+            }
+        ]
+    };
+    
+    const INITIAL_STRATEGY = [
+        {
+            id: 'redes-lojas', title: 'Redes Sociais das Lojas', icon: 'smartphone', color: 'rose',
+            objectives: [{ text: 'Organização das redes sociais', status: 'todo' }], ideas: []
+        }
+    ];
+
+    function hideCloudLoader() {
+        const loader = document.getElementById('cloud-loader');
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => loader.style.display = 'none', 300);
+        }
+    }
+
+    async function initCloud() {
+        initTheme();
+        
+        const loaderTimeout = setTimeout(hideCloudLoader, 3500);
+
+        try {
+            if (initialAuthToken) await signInWithCustomToken(auth, initialAuthToken);
+            else await signInAnonymously(auth);
+        } catch(e) { console.error("Falha na autenticação", e); }
+        setupRealtimeSync(loaderTimeout);
+    }
+
+    function ensureCyclesAreObjects(cyclesArr) {
+        if (!cyclesArr || !Array.isArray(cyclesArr)) return INITIAL_CYCLES;
+        return cyclesArr.map(c => {
+            if (typeof c === 'string') {
+                return { name: c, startDate: "", endDate: "", notices: [] };
+            }
+            return c;
+        });
+    }
+
+    function setupRealtimeSync(loaderTimeout) {
+        if (!db) {
+            sysSettings = INITIAL_SETTINGS;
+            strategyData = INITIAL_STRATEGY;
+            applyUserRole();
+            populateDynamicSelects();
+            renderSidebarTeam();
+            renderSidebarPillars();
+            renderSettingsUI();
+            renderScopeUI();
+            renderStrategy();
+            clearTimeout(loaderTimeout);
+            hideCloudLoader();
+            return;
+        }
+
+        let settingsLoaded = false;
+        let strategyLoaded = false;
+        let tasksLoaded = false;
+
+        function checkFullLoad() {
+            if(settingsLoaded && strategyLoaded && tasksLoaded) {
+                clearTimeout(loaderTimeout);
+                hideCloudLoader();
+            }
+        }
+
+        const settingsDoc = doc(db, 'artifacts', appId, 'public', 'data', 'config', 'settings');
+        onSnapshot(settingsDoc, (docSnap) => {
+            if (docSnap.exists()) {
+                sysSettings = docSnap.data();
+                
+                // MIGRATION: Ensure cycles are objects, not strings.
+                if (sysSettings.cycles && sysSettings.cycles.length > 0 && typeof sysSettings.cycles[0] === 'string') {
+                    sysSettings.cycles = ensureCyclesAreObjects(sysSettings.cycles);
+                    setDoc(settingsDoc, sysSettings);
+                }
+
+                if (sysSettings.scope && sysSettings.scope.length > 0 && typeof sysSettings.scope[0].items[0] === 'string') {
+                    sysSettings.scope = INITIAL_SETTINGS.scope;
+                    setDoc(settingsDoc, sysSettings);
+                }
+            } else {
+                setDoc(settingsDoc, INITIAL_SETTINGS); 
+                sysSettings = INITIAL_SETTINGS;
+            }
+
+            if (!initialAuthCheckDone) {
+                if (!currentUserRole) {
+                    const fallback = sysSettings.team.find(m => m.id !== 'gestor');
+                    currentUserRole = fallback ? fallback.id : 'gestor';
+                    localStorage.setItem(CURRENT_USER_KEY, currentUserRole);
+                }
+                if (currentUserRole === 'gestor') {
+                    document.getElementById('modal-password').classList.remove('hidden');
+                    setTimeout(() => document.getElementById('manager-password-input').focus(), 100);
+                }
+                initialAuthCheckDone = true;
+            }
+
+            applyUserRole();
+            populateDynamicSelects();
+            renderSidebarTeam();
+            renderSidebarPillars();
+            renderSettingsUI();
+            renderScopeUI();
+            
+            // Render cycles specific views if open
+            if(document.getElementById('tab-cycles') && !document.getElementById('tab-cycles').classList.contains('hidden')) {
+                renderCyclesDashboard();
+            }
+            if(document.getElementById('modal-manage-cycles') && !document.getElementById('modal-manage-cycles').classList.contains('hidden')) {
+                renderManageCyclesList();
+            }
+            
+            settingsLoaded = true; checkFullLoad();
+        }, (err) => console.error(err));
+
+        const strategyDoc = doc(db, 'artifacts', appId, 'public', 'data', 'config', 'strategy');
+        onSnapshot(strategyDoc, (docSnap) => {
+            if (docSnap.exists()) {
+                strategyData = docSnap.data().items || [];
+                renderStrategy();
+                if(document.getElementById('tab-settings') && !document.getElementById('tab-settings').classList.contains('hidden')) {
+                    renderSettingsUI();
+                }
+            } else {
+                setDoc(strategyDoc, { items: INITIAL_STRATEGY });
+            }
+            strategyLoaded = true; checkFullLoad();
+        }, (err) => console.error(err));
+
+        const tasksCol = collection(db, 'artifacts', appId, 'public', 'data', 'tasks');
+        onSnapshot(tasksCol, (snapshot) => {
+            tasks = [];
+            snapshot.forEach(docSnap => tasks.push({ id: docSnap.id, ...docSnap.data() }));
+            
+            generateNotifications();
+            renderTasks();
+
+            const editId = document.getElementById('edit-task-id')?.value;
+            if (editId && !document.getElementById('modal-task').classList.contains('hidden')) {
+                const activeTask = tasks.find(t => t.id === editId);
+                if (activeTask) renderTaskComments(activeTask.comments || []);
+            }
+            
+            if(document.getElementById('tab-cycles') && !document.getElementById('tab-cycles').classList.contains('hidden')) {
+                renderCyclesDashboard();
+            }
+
+            tasksLoaded = true; checkFullLoad();
+        }, (err) => console.error(err));
+    }
+
+    window.addSystemLog = async function(taskId, actionText) {
+        const task = tasks.find(t => t.id === taskId);
+        if (!task) return;
+
+        const authorObj = sysSettings.team.find(m => m.id === currentUserRole);
+        const authorName = authorObj ? authorObj.name : 'Sistema';
+
+        const newLog = {
+            id: Date.now().toString() + Math.random().toString(36).substring(2, 6),
+            text: actionText,
+            authorId: currentUserRole,
+            authorName: authorName,
+            timestamp: new Date().toISOString(),
+            type: 'system'
+        };
+
+        const updatedComments = task.comments ? [...task.comments, newLog] : [newLog];
+
+        if (isCloudActive && auth.currentUser) {
+            const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId);
+            await setDoc(taskRef, { comments: updatedComments }, { merge: true });
+        } else {
+            task.comments = updatedComments;
+            if(document.getElementById('edit-task-id').value === taskId) {
+               window.renderTaskComments(task.comments);
+            }
+        }
+    };
+
+    window.saveSettingsData = function() {
+        populateDynamicSelects();
+        renderSidebarTeam();
+        renderSidebarPillars();
+        renderSettingsUI();
+        renderScopeUI();
+        if(currentViewMode === 'kanban') renderTasks();
+        
+        if (!db) return;
+        const settingsDoc = doc(db, 'artifacts', appId, 'public', 'data', 'config', 'settings');
+        setDoc(settingsDoc, sysSettings);
+    };
+
+    window.saveStrategy = function() {
+        if (!db) {
+            renderStrategy();
+            if(document.getElementById('tab-settings') && !document.getElementById('tab-settings').classList.contains('hidden')) renderSettingsUI();
+            return;
+        }
+        const strategyDoc = doc(db, 'artifacts', appId, 'public', 'data', 'config', 'strategy');
+        setDoc(strategyDoc, { items: strategyData });
+    };
+
+    function initTheme() {
+        const savedTheme = localStorage.getItem('mkt_os_theme');
+        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+        updateThemeIcon();
+    }
+    
+    window.toggleTheme = function() {
+        document.documentElement.classList.toggle('dark');
+        const isDark = document.documentElement.classList.contains('dark');
+        localStorage.setItem('mkt_os_theme', isDark ? 'dark' : 'light');
+        updateThemeIcon();
+    };
+    
+    function updateThemeIcon() {
+        const isDark = document.documentElement.classList.contains('dark');
+        const btn = document.getElementById('theme-toggle-btn');
+        if(btn) {
+            btn.innerHTML = isDark ? '<i data-lucide="sun" class="w-5 h-5 text-amber-400"></i>' : '<i data-lucide="moon" class="w-5 h-5 text-slate-500"></i>';
+            lucide.createIcons();
+        }
+    }
+
+    window.shareApp = function(btn) {
+        const tempInput = document.createElement('input');
+        document.body.appendChild(tempInput);
+        tempInput.value = window.location.href;
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+        
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i data-lucide="check" class="w-5 h-5 text-emerald-500"></i>';
+        lucide.createIcons();
+        btn.classList.add('border-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-900/30');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalHtml;
+            lucide.createIcons();
+            btn.classList.remove('border-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-900/30');
+        }, 2000);
+    };
+
+    // --- SISTEMA DE NOTIFICAÇÕES ---
+    window.toggleNotifications = function() {
+        const dropdown = document.getElementById('notifications-dropdown');
+        dropdown.classList.toggle('hidden');
+        if (!dropdown.classList.contains('hidden')) renderNotificationsUI();
+    };
+
+    document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('notifications-dropdown');
+        const btn = document.getElementById('btn-notifications');
+        if (dropdown && !dropdown.classList.contains('hidden') && !dropdown.contains(event.target) && !btn.contains(event.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+
+    function generateNotifications() {
+        if (!sysSettings.team || sysSettings.team.length === 0) return;
+
+        let newNotifications = [];
+        const today = new Date().toISOString().split('T')[0];
+
+        tasks.forEach(task => {
+            if (task.dueDate && task.dueDate < today && task.status !== 'done') {
+                if (task.owner === currentUserRole || currentUserRole === 'gestor') {
+                    newNotifications.push({ id: `overdue-${task.id}`, type: 'overdue', taskId: task.id, taskTitle: task.title, timestamp: new Date(task.dueDate + 'T23:59:59').toISOString(), read: false });
+                }
+            }
+
+            if (task.comments && task.comments.length > 0) {
+                const relevantComments = task.comments.filter(c => c.authorId !== currentUserRole && c.type !== 'system');
+                if (relevantComments.length > 0) {
+                    const latestComment = relevantComments[relevantComments.length - 1]; 
+                    const isOwner = task.owner === currentUserRole;
+                    const isManager = currentUserRole === 'gestor';
+                    const userAlsoCommented = task.comments.some(c => c.authorId === currentUserRole && c.type !== 'system');
+
+                    if (isOwner || isManager || userAlsoCommented) {
+                        const authorObj = sysSettings.team.find(m => m.id === latestComment.authorId);
+                        const authorName = authorObj ? authorObj.name : 'Alguém';
+                        newNotifications.push({ id: `comment-${task.id}-${latestComment.id}`, type: 'comment', taskId: task.id, taskTitle: task.title, authorName: authorName, text: latestComment.text, timestamp: latestComment.timestamp, read: false });
+                    }
+                }
+            }
+        });
+
+        newNotifications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        const storedReadsStr = localStorage.getItem(`mkt_os_reads_${currentUserRole}`);
+        const readIds = storedReadsStr ? JSON.parse(storedReadsStr) : [];
+        
+        notifications = newNotifications.map(n => {
+            if (readIds.includes(n.id)) n.read = true;
+            return n;
+        });
+
+        updateNotificationBadge();
+        
+        const dropdown = document.getElementById('notifications-dropdown');
+        if (dropdown && !dropdown.classList.contains('hidden')) renderNotificationsUI();
+    }
+
+    function updateNotificationBadge() {
+        const badge = document.getElementById('notification-badge');
+        if (!badge) return;
+        if (notifications.some(n => !n.read)) badge.classList.remove('hidden');
+        else badge.classList.add('hidden');
+    }
+
+    window.markAllNotificationsAsRead = function() {
+        const readIds = notifications.map(n => n.id);
+        localStorage.setItem(`mkt_os_reads_${currentUserRole}`, JSON.stringify(readIds));
+        notifications.forEach(n => n.read = true);
+        updateNotificationBadge();
+        renderNotificationsUI();
+    };
+
+    window.openTaskFromNotification = function(taskId, notificationId) {
+        const storedReadsStr = localStorage.getItem(`mkt_os_reads_${currentUserRole}`);
+        let readIds = storedReadsStr ? JSON.parse(storedReadsStr) : [];
+        if (!readIds.includes(notificationId)) {
+            readIds.push(notificationId);
+            localStorage.setItem(`mkt_os_reads_${currentUserRole}`, JSON.stringify(readIds));
+            const notif = notifications.find(n => n.id === notificationId);
+            if(notif) notif.read = true;
+            updateNotificationBadge();
+            renderNotificationsUI();
+        }
+        document.getElementById('notifications-dropdown').classList.add('hidden');
+        window.editTask(taskId);
+    };
+
+    function renderNotificationsUI() {
+        const listContainer = document.getElementById('notifications-list');
+        if (!listContainer) return;
+
+        if (notifications.length === 0) {
+            listContainer.innerHTML = `<div class="p-6 text-center text-slate-500 dark:text-slate-400 flex flex-col items-center"><i data-lucide="check-circle-2" class="w-8 h-8 mb-2 opacity-50"></i><p class="text-sm font-medium">Tudo tranquilo por aqui!</p><p class="text-[10px]">Você não tem novas notificações.</p></div>`;
+            lucide.createIcons();
+            return;
+        }
+
+        listContainer.innerHTML = notifications.map(notif => {
+            const dateObj = new Date(notif.timestamp);
+            const timeStr = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) + ' às ' + dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            let icon, content, bgClass, dotClass;
+            
+            if (notif.type === 'overdue') {
+                icon = '<i data-lucide="alert-triangle" class="w-4 h-4 text-rose-500"></i>';
+                bgClass = notif.read ? 'bg-white dark:bg-slate-800' : 'bg-rose-50/50 dark:bg-rose-900/10';
+                dotClass = notif.read ? 'hidden' : 'bg-rose-500';
+                content = `<p class="text-xs font-bold text-rose-600 dark:text-rose-400 mb-0.5">Tarefa Atrasada</p><p class="text-sm font-medium text-slate-800 dark:text-slate-200 line-clamp-1">${notif.taskTitle}</p>`;
+            } else if (notif.type === 'comment') {
+                icon = '<i data-lucide="message-square" class="w-4 h-4 text-indigo-500"></i>';
+                bgClass = notif.read ? 'bg-white dark:bg-slate-800' : 'bg-indigo-50/50 dark:bg-indigo-900/10';
+                dotClass = notif.read ? 'hidden' : 'bg-indigo-500';
+                content = `<p class="text-xs font-bold text-slate-700 dark:text-slate-300 mb-0.5"><span class="text-indigo-600 dark:text-indigo-400">${notif.authorName}</span> comentou:</p><p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 italic mb-1">"${notif.text}"</p><p class="text-xs font-medium text-slate-600 dark:text-slate-500 line-clamp-1">Em: ${notif.taskTitle}</p>`;
+            }
+
+            return `<div onclick="openTaskFromNotification('${notif.taskId}', '${notif.id}')" class="p-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors flex gap-3 relative ${bgClass}"><div class="mt-0.5 shrink-0">${icon}</div><div class="flex-1 min-w-0">${content}<p class="text-[9px] font-bold text-slate-400 mt-1.5">${timeStr}</p></div><div class="w-2 h-2 rounded-full absolute top-4 right-4 ${dotClass}"></div></div>`;
+        }).join('');
+        lucide.createIcons();
+    }
+
+    window.switchTab = function(tab) {
+        if ((tab === 'reports' || tab === 'settings') && !window.checkGestorAccess()) return; 
+
+        const tabs = ['kanban', 'cycles', 'scope', 'strategy', 'reports', 'settings'];
+        const isKanbanTab = tab === 'kanban';
+        const filtersContainer = document.getElementById('header-filters-container');
+        const viewToggleContainer = document.getElementById('view-toggle-container');
+        if (filtersContainer) filtersContainer.style.display = isKanbanTab ? 'flex' : 'none';
+        if (viewToggleContainer) viewToggleContainer.style.display = isKanbanTab ? 'flex' : 'none';
+
+        tabs.forEach(t => {
+            const el = document.getElementById(`tab-${t}`);
+            const btn = document.getElementById(`btn-${t}`);
+            if (el) el.classList.toggle('hidden', t !== tab);
+            
+            if (btn) {
+                if (t === tab) {
+                    btn.className = 'w-full flex items-center justify-between px-4 py-3 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 font-bold transition-all';
+                } else {
+                    btn.className = 'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 font-medium transition-all';
+                }
+            }
+        });
+
+        if (tab === 'reports') window.renderReports();
+        if (tab === 'cycles') window.renderCyclesDashboard();
+    };
+
+    window.changeView = function(mode) {
+        currentViewMode = mode;
+        const isKanban = mode === 'kanban';
+        document.getElementById('kanban-container').classList.toggle('hidden', !isKanban);
+        document.getElementById('list-container').classList.toggle('hidden', isKanban);
+        document.getElementById('view-btn-kanban').className = isKanban ? 'p-1.5 rounded-lg bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-400 transition-all' : 'p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-all';
+        document.getElementById('view-btn-list').className = !isKanban ? 'p-1.5 rounded-lg bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-400 transition-all' : 'p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-all';
+        window.renderTasks();
+    };
+
+    window.changeCurrentUser = function(newRole) {
+        if (newRole === currentUserRole) return; 
+
+        if (newRole === 'gestor' && !gestorUnlocked) {
+            document.getElementById('modal-password').classList.remove('hidden');
+            setTimeout(() => document.getElementById('manager-password-input').focus(), 100);
+            document.getElementById('pwd-error-msg').classList.add('hidden');
+        } else {
+            gestorUnlocked = newRole === 'gestor' ? true : false;
+            currentUserRole = newRole;
+            localStorage.setItem(CURRENT_USER_KEY, currentUserRole);
+            applyUserRole();
+            renderSidebarTeam(); 
+            generateNotifications(); 
+        }
+    };
+
+    window.closePasswordModal = function() {
+        document.getElementById('modal-password').classList.add('hidden');
+        document.getElementById('manager-password-input').value = '';
+        document.getElementById('pwd-error-msg').classList.add('hidden');
+
+        if (currentUserRole === 'gestor' && !gestorUnlocked) {
+            const fallback = sysSettings.team.find(m => m.id !== 'gestor');
+            currentUserRole = fallback ? fallback.id : 'gestor';
+            localStorage.setItem(CURRENT_USER_KEY, currentUserRole);
+            applyUserRole();
+            renderSidebarTeam();
+        }
+    };
+
+    window.submitManagerPassword = function(e) {
+        e.preventDefault();
+        const input = document.getElementById('manager-password-input');
+        const pwd = input.value;
+        const correctPwd = sysSettings.managerPassword || '8591'; 
+
+        if (pwd === correctPwd) {
+            gestorUnlocked = true;
+            currentUserRole = 'gestor';
+            localStorage.setItem(CURRENT_USER_KEY, currentUserRole);
+            applyUserRole();
+            renderSidebarTeam();
+            window.closePasswordModal();
+            lucide.createIcons();
+            generateNotifications(); 
+        } else {
+            document.getElementById('pwd-error-msg').classList.remove('hidden');
+            input.value = '';
+            input.focus();
+        }
+    };
+
+    window.changeManagerPassword = function() {
+        if (!db) return;
+        const newPwd = document.getElementById('update-manager-pwd').value.trim();
+        if (newPwd) {
+            sysSettings.managerPassword = newPwd;
+            window.saveSettingsData(); 
+            const successMsg = document.getElementById('pwd-success-msg');
+            successMsg.classList.remove('hidden');
+            setTimeout(() => successMsg.classList.add('hidden'), 4000);
+            document.getElementById('update-manager-pwd').value = '';
+        }
+    };
+
+    function renderSidebarTeam() {
+        const container = document.getElementById('sidebar-team-container');
+        if (!container) return;
+        
+        container.innerHTML = sysSettings.team.map(m => `
+            <button onclick="changeCurrentUser('${m.id}')" class="w-full text-left flex items-center gap-3 p-2 rounded-xl transition-colors outline-none focus:ring-2 focus:ring-indigo-500 ${m.id === currentUserRole ? 'bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800/50 shadow-sm' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}">
+                <div class="w-8 h-8 rounded-lg ${m.id === currentUserRole ? 'bg-indigo-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'} flex items-center justify-center text-xs font-bold shrink-0 shadow-sm transition-colors">
+                    ${m.initials}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">${m.name}</p>
+                    <p class="text-[10px] font-medium text-slate-400 dark:text-slate-500 truncate">${m.id === 'gestor' ? 'Administrador' : 'Equipe'}</p>
+                </div>
+                ${m.id === currentUserRole ? '<div title="Usuário Ativo" class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]"></div>' : ''}
+            </button>
+        `).join('');
+    }
+
+    function renderSidebarPillars() {
+        const container = document.getElementById('sidebar-pillars-list');
+        if (!container) return;
+        container.innerHTML = sysSettings.scope.map(p => `
+            <div class="flex items-center gap-3 px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg transition-colors cursor-default">
+                <span class="w-2 h-2 rounded-full bg-${p.color}-500 shrink-0"></span>
+                <span class="truncate" title="${p.title}">${p.title}</span>
+            </div>
+        `).join('');
+    }
+
+    window.checkGestorAccess = function() { return currentUserRole === 'gestor' && gestorUnlocked; };
+
+    function applyUserRole() {
+        const isManager = window.checkGestorAccess(); 
+        const btnSettings = document.getElementById('btn-settings');
+        const tabSettings = document.getElementById('tab-settings');
+        const btnReports = document.getElementById('btn-reports');
+        const tabReports = document.getElementById('tab-reports');
+        
+        // Exibir/Ocultar botão de Gerenciar Ciclos na dashboard
+        const btnManageCycles = document.getElementById('btn-manage-cycles');
+        if (btnManageCycles) {
+            if (isManager) btnManageCycles.classList.remove('hidden');
+            else btnManageCycles.classList.add('hidden');
+        }
+
+        // Mostrar formulário de avisos apenas pro gestor
+        const formAddNotice = document.getElementById('form-add-notice');
+        if (formAddNotice) {
+            if (isManager) formAddNotice.classList.remove('hidden');
+            else formAddNotice.classList.add('hidden');
+        }
+
+        if (btnSettings) {
+            if (isManager) {
+                btnSettings.classList.remove('hidden');
+                if (btnReports) btnReports.classList.remove('hidden');
+            } else {
+                btnSettings.classList.add('hidden');
+                if (btnReports) btnReports.classList.add('hidden');
+                if (tabSettings && !tabSettings.classList.contains('hidden')) window.switchTab('kanban');
+                if (tabReports && !tabReports.classList.contains('hidden')) window.switchTab('kanban');
+            }
+        }
+        renderScopeUI(); 
+    }
+
+    function populateDynamicSelects() {
+        const filterCycle = document.getElementById('filter-cycle');
+        const filterOwner = document.getElementById('filter-owner');
+        const filterArea = document.getElementById('filter-area');
+        const modalCycle = document.getElementById('task-cycle');
+        const modalOwner = document.getElementById('task-owner');
+        const modalArea = document.getElementById('task-area');
+        
+        // Cycles are objects now, so we map the name
+        const cycleNames = sysSettings.cycles.map(c => c.name);
+
+        if(filterCycle) { filterCycle.innerHTML = '<option value="all">Todos Ciclos</option>'; cycleNames.forEach(c => filterCycle.add(new Option(c, c))); }
+        if(filterOwner) { filterOwner.innerHTML = '<option value="all">Todos</option>'; sysSettings.team.forEach(m => filterOwner.add(new Option(m.name, m.id))); }
+        if(filterArea) { filterArea.innerHTML = '<option value="all">Todas Áreas</option>'; sysSettings.scope.forEach(p => filterArea.add(new Option(p.title, p.id))); }
+        
+        if(modalCycle) { modalCycle.innerHTML = ''; cycleNames.forEach(c => modalCycle.add(new Option(c, c))); }
+        if(modalOwner) { modalOwner.innerHTML = ''; sysSettings.team.forEach(m => modalOwner.add(new Option(m.name, m.id))); }
+        if(modalArea) { modalArea.innerHTML = ''; sysSettings.scope.forEach(p => modalArea.add(new Option(p.title, p.id))); }
+    }
+
+    window.renderCyclesDashboard = function() {
+        const selectEl = document.getElementById('dashboard-cycle-select');
+        if (!selectEl) return;
+
+        // Populate the dropdown if empty or sync
+        const currentSelection = selectEl.value;
+        selectEl.innerHTML = sysSettings.cycles.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+        
+        // Try to keep previous selection, otherwise pick the first one
+        if (currentSelection && sysSettings.cycles.some(c => c.name === currentSelection)) {
+            selectEl.value = currentSelection;
+        } else if (sysSettings.cycles.length > 0) {
+            selectEl.value = sysSettings.cycles[sysSettings.cycles.length - 1].name; // Default to newest
+        }
+
+        const selectedCycleName = selectEl.value;
+        const cycleData = sysSettings.cycles.find(c => c.name === selectedCycleName);
+        if (!cycleData) return;
+
+        // Render Dates
+        const datesContainer = document.getElementById('cycle-dates-display');
+        if (cycleData.startDate && cycleData.endDate) {
+            const startStr = new Date(cycleData.startDate + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+            const endStr = new Date(cycleData.endDate + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+            
+            // Calculate status
+            const todayStr = new Date().toISOString().split('T')[0];
+            let statusBadge = '';
+            if (todayStr >= cycleData.startDate && todayStr <= cycleData.endDate) {
+                statusBadge = '<span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-widest ml-2">Ciclo Ativo</span>';
+            } else if (todayStr < cycleData.startDate) {
+                statusBadge = '<span class="px-2 py-0.5 rounded-md bg-slate-200 text-slate-600 text-[10px] font-bold uppercase tracking-widest ml-2">Futuro</span>';
+            } else {
+                statusBadge = '<span class="px-2 py-0.5 rounded-md bg-slate-200 text-slate-600 text-[10px] font-bold uppercase tracking-widest ml-2">Encerrado</span>';
+            }
+
+            datesContainer.innerHTML = `<i data-lucide="calendar" class="w-4 h-4"></i> De ${startStr} até ${endStr} ${statusBadge}`;
+        } else {
+            datesContainer.innerHTML = `<i data-lucide="calendar" class="w-4 h-4"></i> Período não definido para este ciclo.`;
+        }
+
+        // Render Notices
+        const noticesContainer = document.getElementById('cycle-notices-container');
+        if (cycleData.notices && cycleData.notices.length > 0) {
+            noticesContainer.innerHTML = cycleData.notices.map((n, idx) => `
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-amber-100 dark:border-amber-900/30 flex items-start gap-3 animate-slideIn group">
+                    <div class="mt-0.5"><i data-lucide="pin" class="w-4 h-4 text-amber-500"></i></div>
+                    <p class="text-sm font-semibold text-slate-700 dark:text-slate-300 flex-1">${n}</p>
+                    ${window.checkGestorAccess() ? `<button onclick="removeCycleNotice('${cycleData.name}', ${idx})" class="text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="x" class="w-4 h-4"></i></button>` : ''}
+                </div>
+            `).join('');
+        } else {
+            noticesContainer.innerHTML = `<div class="text-center p-6"><p class="text-sm text-amber-700/50 dark:text-amber-500/50 font-medium">Nenhum aviso ou prioridade fixada para este ciclo ainda.</p></div>`;
+        }
+
+        // Filter Tasks for this cycle
+        const cycleTasks = tasks.filter(t => t.cycle === selectedCycleName || (t.isFixed && selectedCycleName === 'Geral'));
+        
+        let total = cycleTasks.length;
+        let done = cycleTasks.filter(t => t.status === 'done').length;
+        let pending = total - done;
+        let progress = total > 0 ? Math.round((done / total) * 100) : 0;
+
+        // Render Progress Ring / KPI
+        const ringContainer = document.getElementById('cycle-progress-ring');
+        ringContainer.innerHTML = `
+            <div class="flex flex-col">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Progresso do Ciclo</span>
+                <div class="flex items-end gap-2">
+                    <span class="text-2xl font-black text-slate-800 dark:text-white leading-none">${progress}%</span>
+                    <span class="text-xs font-bold text-slate-500 mb-0.5">${done}/${total} tarefas</span>
+                </div>
+            </div>
+            <div class="relative w-12 h-12 flex items-center justify-center">
+                <svg class="w-12 h-12 transform -rotate-90">
+                    <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="4" fill="transparent" class="text-slate-200 dark:text-slate-700" />
+                    <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="4" fill="transparent" stroke-dasharray="${2 * Math.PI * 20}" stroke-dashoffset="${2 * Math.PI * 20 * (1 - progress/100)}" class="text-indigo-500 transition-all duration-1000" />
+                </svg>
+            </div>
+        `;
+
+        // Render Tasks Grouped By Pillar
+        const pillarsContainer = document.getElementById('cycle-pillars-tasks');
+        pillarsContainer.innerHTML = '';
+
+        if (total === 0) {
+            pillarsContainer.innerHTML = `
+                <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 text-center border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <div class="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400"><i data-lucide="inbox" class="w-8 h-8"></i></div>
+                    <h4 class="font-bold text-slate-700 dark:text-slate-300 text-lg">Nenhuma tarefa neste ciclo</h4>
+                    <p class="text-sm text-slate-500 mt-2">Adicione demandas e atribua a "${selectedCycleName}" para vê-las organizadas aqui.</p>
+                </div>
+            `;
+            lucide.createIcons();
+            return;
+        }
+
+        sysSettings.scope.forEach(pillar => {
+            const pillarTasks = cycleTasks.filter(t => t.area === pillar.id);
+            if (pillarTasks.length === 0) return; // Skip empty pillars
+
+            const pDone = pillarTasks.filter(t => t.status === 'done').length;
+            const pTotal = pillarTasks.length;
+
+            const pillarDiv = document.createElement('div');
+            pillarDiv.className = `bg-white dark:bg-slate-800 rounded-[2rem] p-6 shadow-sm border border-slate-200 dark:border-slate-700`;
+            
+            let taskListHtml = pillarTasks.sort((a,b) => (a.status === 'done' ? 1 : -1)).map(t => {
+                const isDone = t.status === 'done';
+                return `
+                    <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-600 group">
+                        <div class="w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${isDone ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-transparent'}"><i data-lucide="check" class="w-3.5 h-3.5"></i></div>
+                        <div class="flex-1 min-w-0 flex flex-col md:flex-row md:items-center justify-between gap-2">
+                            <span class="text-sm font-bold truncate ${isDone ? 'text-slate-400 line-through' : 'text-slate-700 dark:text-slate-200 cursor-pointer hover:text-indigo-500'}" onclick="editTask('${t.id}')">${t.title}</span>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <span class="px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-md text-[10px] font-bold" title="Responsável">${getOwnerInitials(t.owner)}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            pillarDiv.innerHTML = `
+                <div class="flex items-center justify-between mb-4 px-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-${pillar.color}-500 shadow-[0_0_8px_currentColor]"></div>
+                        <h4 class="font-bold text-slate-800 dark:text-white">${pillar.title}</h4>
+                    </div>
+                    <span class="text-xs font-bold text-slate-500 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-lg">${pDone}/${pTotal}</span>
+                </div>
+                <div class="space-y-1">
+                    ${taskListHtml}
+                </div>
+            `;
+            pillarsContainer.appendChild(pillarDiv);
+        });
+
+        lucide.createIcons();
+    };
+
+    window.addCycleNotice = function(e) {
+        e.preventDefault();
+        if (!window.checkGestorAccess()) return;
+        const selectEl = document.getElementById('dashboard-cycle-select');
+        const cycleName = selectEl.value;
+        const input = document.getElementById('new-notice-input');
+        const text = input.value.trim();
+        
+        if (cycleName && text) {
+            const cycleIndex = sysSettings.cycles.findIndex(c => c.name === cycleName);
+            if (cycleIndex !== -1) {
+                if(!sysSettings.cycles[cycleIndex].notices) sysSettings.cycles[cycleIndex].notices = [];
+                sysSettings.cycles[cycleIndex].notices.push(text);
+                window.saveSettingsData();
+                input.value = '';
+                renderCyclesDashboard(); // Refresh immediately visually
+            }
+        }
+    };
+
+    window.removeCycleNotice = function(cycleName, noticeIdx) {
+        if (!window.checkGestorAccess()) return;
+        const cycleIndex = sysSettings.cycles.findIndex(c => c.name === cycleName);
+        if (cycleIndex !== -1) {
+            sysSettings.cycles[cycleIndex].notices.splice(noticeIdx, 1);
+            window.saveSettingsData();
+            renderCyclesDashboard();
+        }
+    };
+
+    window.openManageCyclesModal = function() {
+        if (!window.checkGestorAccess()) return;
+        document.getElementById('modal-manage-cycles').classList.remove('hidden');
+        window.prepareNewCycle();
+        window.renderManageCyclesList();
+    };
+
+    window.closeManageCyclesModal = function() {
+        document.getElementById('modal-manage-cycles').classList.add('hidden');
+    };
+
+    window.renderManageCyclesList = function() {
+        const list = document.getElementById('manage-cycles-list');
+        if (!list) return;
+        
+        list.innerHTML = sysSettings.cycles.map(c => `
+            <div class="flex items-center justify-between p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:border-indigo-300 transition-colors group cursor-pointer" onclick="editCycleDetails('${c.name}')">
+                <div class="flex flex-col">
+                    <span class="text-sm font-bold text-slate-800 dark:text-slate-200">${c.name}</span>
+                    <span class="text-[10px] text-slate-500 font-medium">${c.startDate ? `${c.startDate} até ${c.endDate}` : 'Sem datas definidas'}</span>
+                </div>
+                ${c.name !== 'Geral' ? `<button onclick="event.stopPropagation(); removeCycle('${c.name}')" class="text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+            </div>
+        `).join('');
+        lucide.createIcons();
+    };
+
+    window.prepareNewCycle = function() {
+        document.getElementById('form-edit-cycle').reset();
+        document.getElementById('edit-cycle-original-name').value = '';
+        document.getElementById('edit-cycle-name').focus();
+    };
+
+    window.editCycleDetails = function(name) {
+        const cycle = sysSettings.cycles.find(c => c.name === name);
+        if (cycle) {
+            document.getElementById('edit-cycle-original-name').value = cycle.name;
+            document.getElementById('edit-cycle-name').value = cycle.name;
+            document.getElementById('edit-cycle-start').value = cycle.startDate || '';
+            document.getElementById('edit-cycle-end').value = cycle.endDate || '';
+        }
+    };
+
+    window.saveCycleDetails = function(e) {
+        e.preventDefault();
+        if (!window.checkGestorAccess()) return;
+        
+        const originalName = document.getElementById('edit-cycle-original-name').value;
+        const newName = document.getElementById('edit-cycle-name').value.trim();
+        const start = document.getElementById('edit-cycle-start').value;
+        const end = document.getElementById('edit-cycle-end').value;
+
+        if (!newName) return;
+
+        if (originalName) {
+            // Edit existing
+            const idx = sysSettings.cycles.findIndex(c => c.name === originalName);
+            if (idx !== -1) {
+                // If name changed, we should theoretically update tasks, but for simplicity, warn if changing name.
+                if (originalName !== newName && originalName !== 'Geral') {
+                    if(!confirm('Aviso: Mudar o nome do ciclo pode desvincular tarefas antigas associadas a ele. Continuar?')) return;
+                }
+                
+                sysSettings.cycles[idx].name = newName;
+                sysSettings.cycles[idx].startDate = start;
+                sysSettings.cycles[idx].endDate = end;
+                
+                // If name changed, migrate tasks (Advanced safe feature)
+                if (originalName !== newName) {
+                    tasks.forEach(t => {
+                        if (t.cycle === originalName) {
+                            t.cycle = newName;
+                            if (isCloudActive && auth.currentUser) {
+                                setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', t.id), { cycle: newName }, { merge: true });
+                            }
+                        }
+                    });
+                }
+            }
+        } else {
+            // Create new
+            if (sysSettings.cycles.some(c => c.name === newName)) {
+                alert('Já existe um ciclo com este nome.');
+                return;
+            }
+            sysSettings.cycles.push({
+                name: newName,
+                startDate: start,
+                endDate: end,
+                notices: []
+            });
+        }
+
+        window.saveSettingsData();
+        window.prepareNewCycle();
+        window.renderManageCyclesList();
+        
+        // Refresh dashboard if open
+        if(document.getElementById('tab-cycles') && !document.getElementById('tab-cycles').classList.contains('hidden')) {
+            renderCyclesDashboard();
+        }
+    };
+
+    window.removeCycle = function(cName) {
+        if (!window.checkGestorAccess()) return;
+        if(confirm(`Tem certeza que deseja excluir o ciclo "${cName}"? As tarefas não serão excluídas, mas ficarão órfãs de ciclo.`)) { 
+            sysSettings.cycles = sysSettings.cycles.filter(cycle => cycle.name !== cName); 
+            window.saveSettingsData(); 
+            window.prepareNewCycle();
+            window.renderManageCyclesList();
+        }
+    };
+
+    function renderSettingsUI() {
+        const teamList = document.getElementById('settings-team-list');
+        if(teamList) teamList.innerHTML = sysSettings.team.map(m => `
+            <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700 group">
+                <div class="flex items-center gap-3 min-w-0 flex-1 pr-4">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-700 dark:text-indigo-400 font-bold text-xs cursor-pointer hover:ring-2 hover:ring-indigo-400 shrink-0 transition-all shadow-sm" onclick="editTeamMemberInline('${m.id}', this, 'initials')" title="Clique para editar Sigla">${m.initials}</div>
+                    <span class="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer hover:text-indigo-600 truncate transition-colors flex-1" onclick="editTeamMemberInline('${m.id}', this, 'name')" title="Clique para editar Nome">${m.name}</span>
+                </div>
+                ${sysSettings.team.length > 1 ? `<button onclick="removeTeamMember('${m.id}')" class="text-rose-400 hover:text-rose-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+            </div>
+        `).join('');
+
+        const scopeGrid = document.getElementById('settings-scope-grid');
+        if(scopeGrid) scopeGrid.innerHTML = sysSettings.scope.map((pillar, pIdx) => `
+            <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 flex flex-col relative group">
+                <div class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <button onclick="openEditPillarModal(${pIdx})" class="text-slate-400 hover:text-indigo-500 p-1.5 bg-white dark:bg-slate-800 rounded-md shadow-sm border border-slate-200 dark:border-slate-700" title="Editar Pilar"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
+                    <button onclick="removeScopePillar(${pIdx})" class="text-slate-400 hover:text-rose-500 p-1.5 bg-white dark:bg-slate-800 rounded-md shadow-sm border border-slate-200 dark:border-slate-700" title="Excluir Pilar"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                </div>
+                <div class="flex items-center gap-2 mb-4 pr-16">
+                    <div class="w-3 h-3 rounded-full bg-${pillar.color}-500 shrink-0"></div>
+                    <h4 class="font-bold text-slate-800 dark:text-slate-200 truncate" title="${pillar.title}">${pillar.title}</h4>
+                </div>
+                <div class="space-y-2 mb-4 flex-1">
+                    ${pillar.items.map((item, iIdx) => `
+                        <div class="flex justify-between items-center bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-200 dark:border-slate-700">
+                            <span class="text-xs font-medium text-slate-600 dark:text-slate-400 cursor-pointer hover:text-indigo-500 w-full truncate" onclick="editScopeItemInline(${pIdx}, ${iIdx}, this)" title="Clique para editar">${item.text}</span>
+                            <button onclick="removeScopeItem(${pIdx}, ${iIdx})" class="text-slate-400 hover:text-rose-500 shrink-0 ml-2"><i data-lucide="x" class="w-3 h-3"></i></button>
+                        </div>
+                    `).join('')}
+                </div>
+                <form onsubmit="addScopeItem(event, ${pIdx})" class="mt-auto flex gap-2">
+                    <input type="text" id="new-scope-${pIdx}" required placeholder="Nova função..." class="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs px-2 py-1.5 rounded-lg outline-none text-slate-700 dark:text-slate-200 min-w-0">
+                    <button type="submit" class="bg-${pillar.color}-500 hover:bg-${pillar.color}-600 text-white px-2.5 py-1.5 rounded-lg shrink-0 transition-colors"><i data-lucide="plus" class="w-3 h-3"></i></button>
+                </form>
+            </div>
+        `).join('');
+
+        const stratList = document.getElementById('settings-strategy-list');
+        if(stratList) stratList.innerHTML = strategyData.map(area => `
+            <div class="flex flex-col md:flex-row md:items-center justify-between bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-xl bg-${area.color}-100 dark:bg-${area.color}-900/30 flex items-center justify-center text-${area.color}-600 dark:text-${area.color}-400 shrink-0">
+                        <i data-lucide="${area.icon}" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-800 dark:text-slate-200 text-sm">${area.title}</h4>
+                        <p class="text-[10px] text-slate-500">${area.objectives.length} Objetivos • ${area.ideas.length} Ideias</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="editStrategyArea('${area.id}')" class="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 flex items-center gap-1 transition-colors"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i> Editar</button>
+                    <button onclick="deleteStrategyArea('${area.id}')" class="px-3 py-1.5 bg-white dark:bg-slate-800 border border-rose-100 dark:border-rose-900/30 rounded-lg text-xs font-bold text-rose-50 hover:bg-rose-50 dark:hover:bg-rose-900/20 flex items-center gap-1 transition-colors"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Excluir</button>
+                </div>
+            </div>
+        `).join('');
+
+        lucide.createIcons();
+    }
+
+    window.editTeamMemberInline = function(id, element, field) {
+        if (!window.checkGestorAccess()) return;
+        const member = sysSettings.team.find(m => m.id === id);
+        if (!member) return;
+
+        const currentText = member[field];
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = currentText;
+        
+        if (field === 'initials') {
+            input.className = 'w-10 h-8 bg-white dark:bg-slate-800 text-xs font-bold text-indigo-700 dark:text-indigo-400 text-center rounded outline-none ring-2 ring-indigo-500 z-20 uppercase m-0';
+            input.maxLength = 3;
+        } else {
+            input.className = 'w-full bg-slate-50 dark:bg-slate-700 text-sm font-bold text-slate-800 dark:text-slate-200 px-2 py-1 -ml-2 rounded outline-none ring-2 ring-indigo-500 z-20';
+        }
+
+        input.onblur = function() { saveInline(this.value); };
+        input.onkeypress = function(e) { if(e.key === 'Enter') { e.preventDefault(); saveInline(this.value); } };
+
+        function saveInline(newVal) {
+            let trimmed = newVal.trim();
+            if(field === 'initials') trimmed = trimmed.toUpperCase();
+            
+            if (trimmed && trimmed !== currentText) {
+                member[field] = trimmed;
+                window.saveSettingsData();
+                window.renderTasks(); 
+            } else {
+                renderSettingsUI();
+            }
+        }
+
+        element.parentNode.replaceChild(input, element);
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+    };
+
+    function renderScopeUI() {
+        const container = document.getElementById('scope-map-grid');
+        if(!container) return;
+        const isGestor = window.checkGestorAccess();
+        
+        const addPillarBtnContainer = document.getElementById('add-pillar-scope-container');
+        if (addPillarBtnContainer) {
+            addPillarBtnContainer.innerHTML = isGestor ? `
+                <button onclick="openNewPillarModal()" class="mt-6 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 px-5 py-2.5 rounded-xl text-sm font-bold transition-colors inline-flex items-center gap-2 shadow-sm">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Adicionar Novo Pilar
+                </button>
+            ` : '';
+        }
+
+        let columnsCount = sysSettings.scope.length;
+        if(columnsCount === 0) {
+            container.innerHTML = '<p class="text-slate-500 text-sm font-medium w-full col-span-full text-center">Nenhum pilar cadastrado.</p>';
+            container.className = `flex justify-center w-full relative`;
+            return;
+        }
+        
+        let linesHtml = '';
+        for(let i=0; i<columnsCount; i++) {
+            let pos = (100 / columnsCount) * (i + 0.5);
+            linesHtml += `<line x1="${pos}%" y1="0" x2="${pos}%" y2="100%" stroke="currentColor" class="text-slate-200 dark:text-slate-700" stroke-width="2" />`;
+        }
+        if (columnsCount > 1) {
+            let startPos = (100 / columnsCount) * 0.5;
+            let endPos = 100 - startPos;
+            linesHtml += `<line x1="${startPos}%" y1="0" x2="${endPos}%" y2="0" stroke="currentColor" class="text-slate-200 dark:text-slate-700" stroke-width="2" />`;
+        }
+
+        container.innerHTML = `
+            <svg class="absolute top-[-64px] left-0 w-full h-16 -z-0 overflow-visible" preserveAspectRatio="none">${linesHtml}</svg>
+            ${sysSettings.scope.map((pillar, pIdx) => `
+                <div class="flex flex-col items-center z-10 w-full">
+                    <div class="bg-${pillar.color}-600 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase mb-6 shadow-lg text-center w-full max-w-[200px] relative group">
+                        <span class="truncate block" title="${pillar.title}">${pillar.title}</span>
+                        ${isGestor ? `
+                        <div class="absolute -top-3 -right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="openEditPillarModal(${pIdx})" class="bg-indigo-500 text-white rounded-full p-1.5 shadow-md hover:bg-indigo-600 transition-colors" title="Editar Pilar"><i data-lucide="edit-2" class="w-3 h-3"></i></button>
+                            <button onclick="removeScopePillar(${pIdx})" class="bg-rose-500 text-white rounded-full p-1.5 shadow-md hover:bg-rose-600 transition-colors" title="Excluir Pilar"><i data-lucide="x" class="w-3 h-3"></i></button>
+                        </div>
+                        ` : ''}
+                    </div>
+                    <div class="flex flex-col gap-3 w-full">
+                        ${pillar.items.map((item, iIdx) => `
+                            <div class="flex flex-col w-full">
+                                <div class="group bg-white dark:bg-slate-800 p-3 rounded-xl border border-${pillar.color}-100 dark:border-${pillar.color}-900/30 shadow-sm text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex flex-col transition-all">
+                                    <div class="flex items-start justify-between w-full">
+                                        <div class="flex items-center gap-2 min-w-0 flex-1 pr-2">
+                                            <div class="w-1.5 h-1.5 rounded-full bg-${pillar.color}-500 shrink-0 mt-[3px]"></div> 
+                                            <span class="break-words w-full ${isGestor ? 'cursor-pointer hover:text-' + pillar.color + '-600' : ''} transition-colors leading-tight" ${isGestor ? `onclick="editScopeItemInline(${pIdx}, ${iIdx}, this)" title="Clique para editar"` : ''}>${item.text}</span>
+                                        </div>
+                                        ${isGestor ? `
+                                        <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 bg-white dark:bg-slate-800 rounded px-1">
+                                            <button onclick="openSubitemModal(${pIdx}, ${iIdx})" class="text-slate-400 hover:text-emerald-500 p-0.5" title="Adicionar Sub-item (Ramificação)"><i data-lucide="git-branch" class="w-3.5 h-3.5"></i></button>
+                                            <button onclick="removeScopeItem(${pIdx}, ${iIdx})" class="text-slate-400 hover:text-rose-500 p-0.5" title="Excluir Item"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                                        </div>` : ''}
+                                    </div>
+
+                                    ${item.subitems && item.subitems.length > 0 ? `
+                                    <div class="mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-700/50 flex flex-col gap-2 pl-3 relative before:content-[''] before:absolute before:left-0 before:top-0 before:bottom-2 before:w-px before:bg-slate-200 dark:before:bg-slate-700">
+                                        ${item.subitems.map((subitem, sIdx) => `
+                                            <div class="flex items-start justify-between group/sub relative">
+                                                <div class="absolute -left-3 top-2 w-2.5 h-px bg-slate-200 dark:bg-slate-700"></div>
+                                                <div class="flex items-center gap-1.5 min-w-0 flex-1 pr-2">
+                                                    <span class="text-[10px] font-medium text-slate-500 dark:text-slate-400 break-words w-full leading-tight ${isGestor ? 'cursor-pointer hover:text-' + pillar.color + '-500' : ''}" ${isGestor ? `onclick="editSubitemInline(${pIdx}, ${iIdx}, ${sIdx}, this)" title="Editar Sub-item"` : ''}>${subitem}</span>
+                                                </div>
+                                                ${isGestor ? `<button onclick="removeSubitem(${pIdx}, ${iIdx}, ${sIdx})" class="text-slate-300 hover:text-rose-400 opacity-0 group-hover/sub:opacity-100 transition-opacity shrink-0 bg-white dark:bg-slate-800 rounded p-0.5"><i data-lucide="x" class="w-3 h-3"></i></button>` : ''}
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        `).join('')}
+                        ${isGestor ? `
+                            <form onsubmit="addScopeItem(event, ${pIdx})" class="mt-1 flex gap-2 w-full opacity-40 focus-within:opacity-100 hover:opacity-100 transition-opacity">
+                                <input type="text" required placeholder="Novo item principal..." class="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px] px-3 py-2 rounded-xl outline-none text-slate-700 dark:text-slate-200 min-w-0 shadow-sm focus:border-${pillar.color}-400">
+                                <button type="submit" class="bg-${pillar.color}-100 dark:bg-${pillar.color}-900/30 text-${pillar.color}-600 dark:text-${pillar.color}-400 hover:bg-${pillar.color}-200 dark:hover:bg-${pillar.color}-900/50 px-2.5 py-2 rounded-xl shrink-0 transition-colors"><i data-lucide="plus" class="w-3.5 h-3.5"></i></button>
+                            </form>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('')}
+        `;
+        
+        container.className = `grid gap-8 w-full relative`;
+        container.style.gridTemplateColumns = `repeat(${columnsCount}, minmax(0, 1fr))`;
+        lucide.createIcons();
+    }
+
+    window.openNewPillarModal = function() {
+        document.getElementById('edit-pillar-idx').value = '';
+        document.getElementById('modal-pillar-title-text').innerText = 'Novo Pilar do Setor';
+        document.getElementById('submit-pillar-btn').innerText = 'Adicionar Pilar';
+        document.getElementById('new-pillar-title').value = '';
+        document.getElementById('new-pillar-color').value = 'blue';
+        document.getElementById('modal-pillar').classList.remove('hidden');
+    };
+    
+    window.openEditPillarModal = function(idx) {
+        if (!window.checkGestorAccess()) return;
+        const pillar = sysSettings.scope[idx];
+        document.getElementById('edit-pillar-idx').value = idx;
+        document.getElementById('modal-pillar-title-text').innerText = 'Editar Pilar';
+        document.getElementById('submit-pillar-btn').innerText = 'Salvar Alterações';
+        document.getElementById('new-pillar-title').value = pillar.title;
+        document.getElementById('new-pillar-color').value = pillar.color;
+        document.getElementById('modal-pillar').classList.remove('hidden');
+    };
+
+    window.closePillarModal = function() {
+        document.getElementById('modal-pillar').classList.add('hidden');
+        document.getElementById('new-pillar-title').value = '';
+        document.getElementById('edit-pillar-idx').value = '';
+    };
+
+    window.submitPillarForm = function(e) {
+        e.preventDefault();
+        if (!window.checkGestorAccess()) return;
+        const title = document.getElementById('new-pillar-title').value.trim();
+        const color = document.getElementById('new-pillar-color').value;
+        const idx = document.getElementById('edit-pillar-idx').value;
+        
+        if (title) {
+            if (idx !== '') {
+                sysSettings.scope[idx].title = title;
+                sysSettings.scope[idx].color = color;
+            } else {
+                const id = 'pilar_' + Date.now().toString();
+                sysSettings.scope.push({ id, title, color, items: [] });
+            }
+            window.saveSettingsData();
+            window.closePillarModal();
+        }
+    };
+
+    window.removeScopePillar = function(idx) {
+        if (!window.checkGestorAccess()) return;
+        if (confirm('Atenção: Excluir este pilar removerá a categoria inteira.\nConfirmar exclusão?')) {
+            sysSettings.scope.splice(idx, 1);
+            window.saveSettingsData();
+        }
+    };
+
+    window.editScopeItemInline = function(pIdx, iIdx, element) {
+        if (!window.checkGestorAccess()) return;
+        
+        const currentText = sysSettings.scope[pIdx].items[iIdx].text;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = currentText;
+        input.className = 'w-full bg-slate-50 dark:bg-slate-700 text-[11px] font-semibold text-slate-800 dark:text-slate-200 px-2 py-1 -ml-2 rounded outline-none ring-2 ring-indigo-500 z-20';
+        
+        input.onblur = function() { saveInline(this.value); };
+        input.onkeypress = function(e) { if(e.key === 'Enter') { e.preventDefault(); saveInline(this.value); } };
+        
+        function saveInline(newVal) {
+            const trimmed = newVal.trim();
+            if (trimmed && trimmed !== currentText) {
+                sysSettings.scope[pIdx].items[iIdx].text = trimmed;
+                window.saveSettingsData();
+            } else {
+                renderScopeUI();
+                if(document.getElementById('tab-settings') && !document.getElementById('tab-settings').classList.contains('hidden')) {
+                    renderSettingsUI();
+                }
+            }
+        }
+        
+        element.parentNode.replaceChild(input, element);
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+    };
+
+    window.addScopeItem = function(e, pillarIdx) {
+        e.preventDefault();
+        if (!window.checkGestorAccess()) return;
+        const input = e.target.querySelector('input[type="text"]');
+        if (!input) return;
+        const val = input.value.trim();
+        if(val) { 
+            sysSettings.scope[pillarIdx].items.push({ text: val, subitems: [] }); 
+            window.saveSettingsData(); 
+            e.target.reset(); 
+        }
+    };
+    
+    window.removeScopeItem = function(pillarIdx, itemIdx) {
+        if (!window.checkGestorAccess()) return;
+        sysSettings.scope[pillarIdx].items.splice(itemIdx, 1); 
+        window.saveSettingsData();
+    };
+
+    window.openSubitemModal = function(pIdx, iIdx) {
+        if (!window.checkGestorAccess()) return;
+        document.getElementById('subitem-p-idx').value = pIdx;
+        document.getElementById('subitem-i-idx').value = iIdx;
+        document.getElementById('subitem-text').value = '';
+        document.getElementById('modal-subitem').classList.remove('hidden');
+        setTimeout(() => document.getElementById('subitem-text').focus(), 100);
+    };
+
+    window.closeSubitemModal = function() {
+        document.getElementById('modal-subitem').classList.add('hidden');
+        document.getElementById('subitem-p-idx').value = '';
+        document.getElementById('subitem-i-idx').value = '';
+    };
+
+    window.submitSubitem = function(e) {
+        e.preventDefault();
+        if (!window.checkGestorAccess()) return;
+        
+        const pIdx = document.getElementById('subitem-p-idx').value;
+        const iIdx = document.getElementById('subitem-i-idx').value;
+        const subText = document.getElementById('subitem-text').value.trim();
+        
+        if (subText && pIdx !== '' && iIdx !== '') {
+            if (!sysSettings.scope[pIdx].items[iIdx].subitems) {
+                sysSettings.scope[pIdx].items[iIdx].subitems = [];
+            }
+            sysSettings.scope[pIdx].items[iIdx].subitems.push(subText);
+            window.saveSettingsData();
+            window.closeSubitemModal();
+        }
+    };
+
+    window.removeSubitem = function(pIdx, iIdx, sIdx) {
+        if (!window.checkGestorAccess()) return;
+        sysSettings.scope[pIdx].items[iIdx].subitems.splice(sIdx, 1);
+        window.saveSettingsData();
+    };
+
+    window.editSubitemInline = function(pIdx, iIdx, sIdx, element) {
+        if (!window.checkGestorAccess()) return;
+        const currentText = sysSettings.scope[pIdx].items[iIdx].subitems[sIdx];
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = currentText;
+        input.className = 'w-full bg-slate-50 dark:bg-slate-700 text-[10px] font-medium text-slate-800 dark:text-slate-200 px-1 py-0.5 -ml-1 rounded outline-none ring-2 ring-indigo-500 z-20';
+        
+        input.onblur = function() { saveInline(this.value); };
+        input.onkeypress = function(e) { if(e.key === 'Enter') { e.preventDefault(); saveInline(this.value); } };
+        
+        function saveInline(newVal) {
+            const trimmed = newVal.trim();
+            if (trimmed && trimmed !== currentText) {
+                sysSettings.scope[pIdx].items[iIdx].subitems[sIdx] = trimmed;
+                window.saveSettingsData();
+            } else {
+                renderScopeUI();
+            }
+        }
+        
+        element.parentNode.replaceChild(input, element);
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+    };
+
+    window.addTeamMember = function(e) {
+        e.preventDefault();
+        if (!window.checkGestorAccess()) return;
+        const nameInput = document.getElementById('new-team-name');
+        const initialsInput = document.getElementById('new-team-initials');
+        if (!nameInput || !initialsInput) return;
+        const name = nameInput.value.trim();
+        const initials = initialsInput.value.trim().toUpperCase();
+        if(name && initials) { 
+            const newId = 'user_' + Date.now().toString();
+            sysSettings.team.push({ id: newId, name, initials }); 
+            window.saveSettingsData(); 
+            e.target.reset(); 
+        }
+    };
+    
+    window.removeTeamMember = function(id) {
+        if (!window.checkGestorAccess()) return;
+        if(confirm('Remover membro? (Tarefas atribuídas a ele continuarão existindo)')) {
+            sysSettings.team = sysSettings.team.filter(m => m.id !== id); 
+            window.saveSettingsData();
+        }
+    };
+    
+    window.openStrategyModal = function() { document.getElementById('modal-strategy').classList.remove('hidden'); };
+
+    window.closeStrategyModal = function() {
+        document.getElementById('modal-strategy').classList.add('hidden');
+        document.getElementById('strategy-form').reset();
+        document.getElementById('edit-strategy-id').value = '';
+        currentStrategyObjectives = [];
+        window.renderModalStrategyObjectives();
+        document.getElementById('modal-strategy-title').innerText = 'Nova Área Estratégica';
+        document.getElementById('submit-strat-btn').innerText = 'Salvar Área';
+    };
+    
+    window.editStrategyArea = function(id) {
+        const area = strategyData.find(a => a.id === id);
+        if(!area) return;
+        document.getElementById('edit-strategy-id').value = area.id;
+        document.getElementById('strat-title').value = area.title;
+        document.getElementById('strat-icon').value = area.icon;
+        document.getElementById('strat-color').value = area.color;
+        currentStrategyObjectives = area.objectives ? JSON.parse(JSON.stringify(area.objectives)) : [];
+        window.renderModalStrategyObjectives();
+        document.getElementById('modal-strategy-title').innerText = 'Editar Área Estratégica';
+        document.getElementById('submit-strat-btn').innerText = 'Atualizar Área';
+        window.openStrategyModal();
+    };
+    
+    window.deleteStrategyArea = function(id) {
+        if (!window.checkGestorAccess()) return;
+        if(confirm('Tem certeza que deseja excluir esta área estratégica?')) { strategyData = strategyData.filter(a => a.id !== id); window.saveStrategy(); }
+    };
+    
+    window.addStrategyObjective = function() {
+        const input = document.getElementById('new-strat-obj');
+        if (input.value.trim()) { currentStrategyObjectives.push({ text: input.value.trim(), status: 'todo' }); input.value = ''; window.renderModalStrategyObjectives(); }
+    };
+    
+    window.renderModalStrategyObjectives = function() {
+        const container = document.getElementById('strat-objectives-list');
+        if(!container) return;
+        container.innerHTML = currentStrategyObjectives.map((obj, idx) => `
+            <div class="flex items-center justify-between bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-200 dark:border-slate-600 animate-slideIn">
+                <span class="text-xs font-medium text-slate-700 dark:text-slate-300 ml-2">${obj.text}</span>
+                <button type="button" onclick="currentStrategyObjectives.splice(${idx}, 1); renderModalStrategyObjectives();" class="text-rose-400 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+            </div>
+        `).join('');
+        lucide.createIcons();
+    };
+
+    window.submitStrategyForm = function(e) {
+        e.preventDefault();
+        if (!window.checkGestorAccess()) {
+            window.closeStrategyModal();
+            return;
+        }
+
+        const editingId = document.getElementById('edit-strategy-id').value;
+        const stratData = {
+            title: document.getElementById('strat-title').value,
+            icon: document.getElementById('strat-icon').value,
+            color: document.getElementById('strat-color').value,
+            objectives: [...currentStrategyObjectives]
+        };
+        if (editingId) {
+            const index = strategyData.findIndex(a => a.id === editingId);
+            if(index !== -1) { stratData.ideas = strategyData[index].ideas || []; stratData.id = strategyData[index].id; strategyData[index] = stratData; }
+        } else {
+            stratData.id = 'strat-' + Date.now().toString(); stratData.ideas = []; strategyData.push(stratData);
+        }
+        window.saveStrategy();
+        window.closeStrategyModal();
+    };
+
+    function renderStrategy() {
+        const grid = document.getElementById('strategy-grid');
+        if(!grid) return;
+        grid.innerHTML = '';
+        const statusConfig = { 'todo': { label: 'A Iniciar', class: 'bg-slate-100 dark:bg-slate-800 text-slate-500' }, 'doing': { label: 'Em Andamento', class: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400' }, 'done': { label: 'Concluído', class: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400' }};
+
+        strategyData.forEach(area => {
+            const completed = area.objectives.filter(o => o.status === 'done').length;
+            const progress = area.objectives.length > 0 ? Math.round((completed / area.objectives.length) * 100) : 0;
+            const card = document.createElement('div');
+            card.className = 'bg-white dark:bg-slate-800 rounded-[2rem] p-8 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col gap-6';
+            
+            let objHtml = area.objectives.map((obj, idx) => `
+                <div class="flex items-center justify-between p-3 rounded-xl border border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-900/50">
+                    <span class="text-sm font-semibold text-slate-700 dark:text-slate-300 w-2/3">${obj.text}</span>
+                    <button onclick="toggleObjectiveStatus('${area.id}', ${idx})" class="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase border transition-colors ${statusConfig[obj.status].class}">
+                        ${statusConfig[obj.status].label}
+                    </button>
+                </div>
+            `).join('');
+
+            let ideasHtml = area.ideas.map((idea, idx) => `
+                <div class="flex items-start gap-2 group">
+                    <i data-lucide="lightbulb" class="w-4 h-4 text-amber-400 mt-0.5 shrink-0"></i>
+                    <span class="text-sm font-medium text-slate-600 dark:text-slate-400 flex-1">${idea}</span>
+                    <button onclick="removeIdea('${area.id}', ${idx})" class="text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="x" class="w-4 h-4"></i></button>
+                </div>
+            `).join('');
+
+            card.innerHTML = `
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 rounded-2xl bg-${area.color}-100 dark:bg-${area.color}-900/30 flex items-center justify-center text-${area.color}-600 dark:text-${area.color}-400">
+                        <i data-lucide="${area.icon}" class="w-7 h-7"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-xl font-extrabold text-slate-800 dark:text-slate-100">${area.title}</h3>
+                        <div class="flex items-center gap-3 mt-2">
+                            <div class="h-2 flex-1 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                                <div class="h-full bg-${area.color}-500 rounded-full transition-all duration-700" style="width: ${progress}%"></div>
+                            </div>
+                            <span class="text-xs font-bold text-slate-400">${progress}%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700 pb-2">Metas & OKRs</h4>
+                    <div class="space-y-2">${objHtml}</div>
+                </div>
+                <div class="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2"><i data-lucide="zap" class="w-4 h-4 text-amber-500"></i> Ideias</h4>
+                    <div class="space-y-3 bg-amber-50/30 dark:bg-amber-900/10 p-4 rounded-2xl border border-amber-100/50 dark:border-amber-900/30 min-h-[80px]">
+                        ${ideasHtml || '<p class="text-xs text-slate-400 italic">Nenhuma ideia registrada ainda.</p>'}
+                    </div>
+                    <form onsubmit="addIdea(event, '${area.id}')" class="flex gap-2">
+                        <input type="text" id="idea-input-${area.id}" required placeholder="Nova ideia ou plano..." class="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-sm font-medium rounded-xl px-4 py-2 outline-none">
+                        <button type="submit" class="bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white px-4 py-2 rounded-xl transition-colors"><i data-lucide="plus" class="w-5 h-5"></i></button>
+                    </form>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+        lucide.createIcons();
+    }
+    
+    window.toggleObjectiveStatus = function(areaId, objIndex) {
+        const area = strategyData.find(a => a.id === areaId);
+        const currentStatus = area.objectives[objIndex].status;
+        area.objectives[objIndex].status = currentStatus === 'todo' ? 'doing' : (currentStatus === 'doing' ? 'done' : 'todo');
+        window.saveStrategy();
+    };
+
+    window.addIdea = function(event, areaId) {
+        event.preventDefault(); const input = document.getElementById(`idea-input-${areaId}`);
+        if(input.value.trim()) { strategyData.find(a => a.id === areaId).ideas.push(input.value.trim()); window.saveStrategy(); }
+    };
+
+    window.removeIdea = function(areaId, ideaIndex) {
+        strategyData.find(a => a.id === areaId).ideas.splice(ideaIndex, 1); window.saveStrategy();
+    };
+
+    let currentDragId = null;
+    window.allowDrop = function(ev) { ev.preventDefault(); };
+
+    window.dragEnter = function(ev) { ev.currentTarget.classList.add('drag-over'); };
+
+    window.dragLeave = function(ev) { ev.currentTarget.classList.remove('drag-over'); };
+
+    function checkRecurrence(task, newStatus) {
+        if (newStatus === 'done' && task.isFixed) {
+            let nextCycleName = task.cycle;
+            
+            const cyclesList = sysSettings.cycles.map(c => c.name);
+            let currentIdx = cyclesList.indexOf(task.cycle);
+            
+            if(currentIdx !== -1 && currentIdx < cyclesList.length - 1) {
+                nextCycleName = cyclesList[currentIdx + 1];
+            }
+
+            const newTask = JSON.parse(JSON.stringify(task));
+            newTask.id = Date.now().toString() + Math.random().toString(36).substring(2,6);
+            newTask.status = 'backlog';
+            newTask.cycle = nextCycleName;
+            newTask.createdAt = new Date().toISOString();
+            newTask.updatedAt = new Date().toISOString();
+            
+            if(newTask.checklist) {
+                newTask.checklist.forEach(c => c.done = false);
+            }
+            
+            newTask.comments = [{
+                id: Date.now().toString(), text: `Renovada automaticamente a partir da conclusão no ciclo ${task.cycle}`,
+                authorId: currentUserRole, authorName: 'Sistema de Rotinas', timestamp: new Date().toISOString(), type: 'system'
+            }];
+
+            if(isCloudActive && auth.currentUser) {
+                setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', newTask.id), newTask);
+            } else {
+                tasks.push(newTask);
+            }
+            
+            window.addSystemLog(task.id, `concluiu e o sistema <b>gerou a renovação</b> para o ciclo ${nextCycleName}`);
+        }
+    }
+
+    window.drop = function(ev) {
+        ev.preventDefault(); ev.currentTarget.classList.remove('drag-over');
+        const newStatus = ev.currentTarget.id.replace('col-', '');
+        const oldTask = tasks.find(t => t.id === currentDragId);
+        
+        if (oldTask && oldTask.status !== newStatus) {
+            const statusNames = { 'backlog': 'A Fazer', 'todo': 'Em Execução', 'review': 'Aguardando Revisão', 'done': 'Concluído' };
+            window.addSystemLog(currentDragId, `moveu a tarefa para <b>${statusNames[newStatus]}</b>`);
+            
+            checkRecurrence(oldTask, newStatus);
+            
+            if (isCloudActive && auth.currentUser) {
+                const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', currentDragId);
+                setDoc(taskRef, { status: newStatus }, { merge: true });
+            } else {
+                oldTask.status = newStatus;
+                window.renderTasks();
+            }
+        }
+    };
+    
+    window.changeTaskStatus = function(id, newStatus) { 
+        const oldTask = tasks.find(t => t.id === id);
+        if (oldTask && oldTask.status !== newStatus) {
+            const statusNames = { 'backlog': 'A Fazer', 'todo': 'Em Execução', 'review': 'Aguardando Revisão', 'done': 'Concluído' };
+            window.addSystemLog(id, `moveu a tarefa para <b>${statusNames[newStatus]}</b>`);
+            
+            checkRecurrence(oldTask, newStatus);
+            
+            if (isCloudActive && auth.currentUser) {
+                const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', id);
+                setDoc(taskRef, { status: newStatus }, { merge: true });
+            } else {
+                oldTask.status = newStatus;
+                window.renderTasks();
+            }
+        }
+    };
+
+    function getOwnerInitials(ownerId) {
+        const m = sysSettings.team.find(t => t.id === ownerId);
+        return m ? m.initials : '??';
+    }
+
+    window.openTaskModal = function() { document.getElementById('modal-task').classList.remove('hidden'); };
+
+    window.closeTaskModal = function() { 
+        document.getElementById('modal-task').classList.add('hidden'); 
+        document.getElementById('task-form').reset();
+        document.getElementById('edit-task-id').value = '';
+        document.getElementById('task-desc').innerHTML = ''; 
+        currentChecklist = []; document.getElementById('checklist-items').innerHTML = '';
+        currentLinks = []; document.getElementById('modal-links-list').innerHTML = ''; 
+        
+        document.getElementById('task-chat-section').classList.add('hidden');
+        document.getElementById('task-chat-section').classList.remove('flex');
+        document.getElementById('new-chat-message').value = '';
+        document.getElementById('task-chat-messages').innerHTML = '';
+
+        document.getElementById('modal-title').innerText = 'Nova Demanda';
+        document.getElementById('submit-btn-text').innerText = 'Criar Demanda';
+    };
+
+    window.addTaskLink = function() {
+        const titleInput = document.getElementById('new-link-title');
+        const urlInput = document.getElementById('new-link-url');
+        const title = titleInput.value.trim() || 'Link Anexado';
+        let url = urlInput.value.trim();
+
+        if (url) {
+            if (!/^https?:\/\//i.test(url)) url = 'https://' + url; 
+            currentLinks.push({ title, url });
+            titleInput.value = ''; urlInput.value = '';
+            window.renderModalLinks();
+        }
+    };
+
+    window.renderModalLinks = function() {
+        document.getElementById('modal-links-list').innerHTML = currentLinks.map((link, idx) => `
+            <div class="flex items-center gap-2 bg-white dark:bg-slate-700 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-600 animate-slideIn">
+                <a href="${link.url}" target="_blank" class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
+                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i> ${link.title}
+                </a>
+                <div class="w-px h-3 bg-slate-200 dark:bg-slate-600 mx-1"></div>
+                <button type="button" onclick="currentLinks.splice(${idx}, 1); renderModalLinks();" class="text-slate-400 hover:text-rose-500"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+            </div>
+        `).join('');
+        lucide.createIcons();
+    };
+
+    window.addChecklistItem = function() {
+        const input = document.getElementById('new-check-item');
+        if (input.value.trim()) { currentChecklist.push({ text: input.value.trim(), done: false }); input.value = ''; window.renderModalChecklist(); }
+    };
+
+    window.renderModalChecklist = function() {
+        document.getElementById('checklist-items').innerHTML = currentChecklist.map((item, idx) => `
+            <div class="flex items-center justify-between bg-white dark:bg-slate-800 p-2 rounded-xl border border-indigo-100 dark:border-slate-700 animate-slideIn">
+                <span class="text-sm font-medium text-slate-700 dark:text-slate-300 ml-2">${item.text}</span>
+                <button type="button" onclick="currentChecklist.splice(${idx}, 1); renderModalChecklist();" class="text-rose-400 dark:text-rose-500 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </div>
+        `).join('');
+        lucide.createIcons();
+    };
+
+    window.submitTaskForm = function(e) {
+        e.preventDefault();
+        
+        const editingId = document.getElementById('edit-task-id').value;
+        const taskId = editingId || Date.now().toString();
+        const taskData = {
+            id: taskId,
+            title: document.getElementById('task-title').value,
+            desc: document.getElementById('task-desc').innerHTML,
+            area: document.getElementById('task-area').value,
+            priority: document.getElementById('task-priority').value,
+            owner: document.getElementById('task-owner').value,
+            cycle: document.getElementById('task-cycle').value,
+            dueDate: document.getElementById('task-due-date').value,
+            isFixed: document.getElementById('task-is-fixed').checked,
+            checklist: [...currentChecklist],
+            links: [...currentLinks], 
+            updatedAt: new Date().toISOString()
+        };
+
+        let logsToInject = [];
+
+        if (!editingId) {
+            taskData.status = 'backlog';
+            taskData.createdAt = new Date().toISOString();
+            
+            logsToInject.push({
+                id: Date.now().toString() + '1', text: `criou a demanda`,
+                authorId: currentUserRole, authorName: sysSettings.team.find(m => m.id === currentUserRole)?.name || 'Sistema',
+                timestamp: new Date().toISOString(), type: 'system'
+            });
+
+        } else {
+            const oldTask = tasks.find(t => t.id === editingId);
+            if (oldTask) {
+                if (oldTask.owner !== taskData.owner) {
+                    const newOwnerName = sysSettings.team.find(m => m.id === taskData.owner)?.name || 'Ninguém';
+                    logsToInject.push({ id: Date.now().toString() + '2', text: `atribuiu a tarefa para <b>${newOwnerName}</b>`, authorId: currentUserRole, authorName: sysSettings.team.find(m => m.id === currentUserRole)?.name || 'Sistema', timestamp: new Date().toISOString(), type: 'system' });
+                }
+                if (oldTask.dueDate !== taskData.dueDate) {
+                    const dateStr = taskData.dueDate ? new Date(taskData.dueDate + 'T12:00:00').toLocaleDateString('pt-BR') : 'sem prazo definido';
+                    logsToInject.push({ id: Date.now().toString() + '3', text: `alterou o prazo para <b>${dateStr}</b>`, authorId: currentUserRole, authorName: sysSettings.team.find(m => m.id === currentUserRole)?.name || 'Sistema', timestamp: new Date().toISOString(), type: 'system' });
+                }
+            }
+        }
+
+        if (logsToInject.length > 0) {
+            const existingComments = editingId ? (tasks.find(t => t.id === editingId)?.comments || []) : [];
+            taskData.comments = [...existingComments, ...logsToInject];
+        }
+
+        if (isCloudActive && auth.currentUser) {
+            const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId);
+            setDoc(taskRef, taskData, { merge: true });
+        } else {
+            if (editingId) {
+                const idx = tasks.findIndex(t => t.id === editingId);
+                if(idx !== -1) tasks[idx] = { ...tasks[idx], ...taskData };
+            } else {
+                tasks.push(taskData);
+            }
+            window.renderTasks();
+            generateNotifications();
+        }
+        
+        window.closeTaskModal();
+    };
+
+    window.editTask = function(id) {
+        const task = tasks.find(t => t.id === id);
+        if(!task) return;
+        document.getElementById('edit-task-id').value = task.id;
+        document.getElementById('task-title').value = task.title;
+        document.getElementById('task-desc').innerHTML = task.desc || ''; 
+        document.getElementById('task-area').value = task.area;
+        document.getElementById('task-priority').value = task.priority;
+        if(sysSettings.team.some(m => m.id === task.owner)) document.getElementById('task-owner').value = task.owner;
+        if(sysSettings.cycles.some(c => c.name === task.cycle)) document.getElementById('task-cycle').value = task.cycle;
+        document.getElementById('task-due-date').value = task.dueDate || '';
+        document.getElementById('task-is-fixed').checked = task.isFixed || false;
+        
+        currentChecklist = task.checklist ? JSON.parse(JSON.stringify(task.checklist)) : [];
+        window.renderModalChecklist();
+        
+        currentLinks = task.links ? JSON.parse(JSON.stringify(task.links)) : [];
+        window.renderModalLinks();
+        
+        document.getElementById('task-chat-section').classList.remove('hidden');
+        document.getElementById('task-chat-section').classList.add('flex');
+        window.renderTaskComments(task.comments || []);
+
+        document.getElementById('modal-title').innerText = 'Editar Demanda';
+        document.getElementById('submit-btn-text').innerText = 'Atualizar na Nuvem';
+        window.openTaskModal();
+    };
+
+    window.addTaskComment = async function() {
+        if (!db) return;
+        const taskId = document.getElementById('edit-task-id').value;
+        if (!taskId) return; 
+
+        const input = document.getElementById('new-chat-message');
+        const text = input.value.trim();
+        if (!text) return;
+
+        const task = tasks.find(t => t.id === taskId);
+        if (!task) return;
+
+        const newComment = {
+            id: Date.now().toString(),
+            text: text,
+            authorId: currentUserRole,
+            timestamp: new Date().toISOString()
+        };
+
+        const updatedComments = task.comments ? [...task.comments, newComment] : [newComment];
+        
+        input.value = '';
+
+        if (isCloudActive && auth.currentUser) {
+            const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId);
+            await setDoc(taskRef, { comments: updatedComments }, { merge: true });
+        } else {
+            task.comments = updatedComments;
+            window.renderTaskComments(task.comments);
+        }
+    };
+
+    window.handleChatKeyPress = function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault(); 
+            window.addTaskComment();
+        }
+    };
+
+    window.renderTaskComments = function(comments) {
+        const container = document.getElementById('task-chat-messages');
+        if (!comments || comments.length === 0) {
+            container.innerHTML = '<p class="text-xs text-slate-400 italic text-center mt-auto">Nenhum comentário ou ação registrada ainda.</p>';
+            return;
+        }
+
+        container.innerHTML = comments.map(c => {
+            const dateObj = new Date(c.timestamp);
+            const timeStr = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            const dateStr = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+
+            if (c.type === 'system') {
+                const sysAuthor = c.authorName || (sysSettings.team.find(m => m.id === c.authorId)?.name) || 'Sistema';
+                return `
+                    <div class="flex justify-center my-3 animate-slideIn">
+                        <span class="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10px] text-slate-500 dark:text-slate-400 font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm text-center">
+                            <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-500"></i>
+                            <span><b>${sysAuthor}</b> ${c.text} <span class="opacity-50 ml-1">• ${dateStr} às ${timeStr}</span></span>
+                        </span>
+                    </div>
+                `;
+            }
+
+            const isMe = c.authorId === currentUserRole;
+            const authorObj = sysSettings.team.find(m => m.id === c.authorId);
+            const authorName = authorObj ? authorObj.name : 'Usuário Removido';
+            const authorInitials = authorObj ? authorObj.initials : '??';
+
+            if (isMe) {
+                return `
+                    <div class="flex flex-col items-end animate-slideIn">
+                        <span class="text-[9px] font-bold text-slate-400 mb-0.5">${dateStr} às ${timeStr}</span>
+                        <div class="bg-indigo-600 text-white p-3 rounded-2xl rounded-tr-sm shadow-sm max-w-[85%] text-sm leading-relaxed">
+                            ${c.text}
+                        </div>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="flex items-end gap-2 animate-slideIn">
+                        <div class="w-8 h-8 rounded-xl bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-600 dark:text-slate-300 shrink-0 border border-slate-300 dark:border-slate-600 shadow-sm">
+                            ${authorInitials}
+                        </div>
+                        <div class="flex flex-col items-start max-w-[85%]">
+                            <span class="text-[9px] font-bold text-slate-400 mb-0.5 ml-1">${authorName} • ${dateStr} às ${timeStr}</span>
+                            <div class="bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 p-3 rounded-2xl rounded-tl-sm shadow-sm border border-slate-200 dark:border-slate-600 text-sm leading-relaxed">
+                                ${c.text}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }).join('');
+        lucide.createIcons();
+        
+        setTimeout(() => { container.scrollTop = container.scrollHeight; }, 10);
+    };
+
+    window.duplicateTask = function(id) {
+        if (!db) return;
+        const task = tasks.find(t => t.id === id);
+        if(!task) return;
+        const newTask = JSON.parse(JSON.stringify(task));
+        newTask.id = Date.now().toString();
+        newTask.title = newTask.title + ' (Cópia)';
+        newTask.createdAt = new Date().toISOString();
+        
+        if (isCloudActive && auth.currentUser) {
+            setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', newTask.id), newTask);
+        } else {
+            tasks.push(newTask);
+            window.renderTasks();
+        }
+    };
+
+    window.deleteTask = function(id) { 
+        if(confirm('Excluir esta demanda?')) { 
+            if (isCloudActive && auth.currentUser) {
+                deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', id)); 
+            } else {
+                tasks = tasks.filter(t => t.id !== id);
+                window.renderTasks();
+            }
+        } 
+    };
+
+    window.toggleCheck = function(taskId, checkIdx) {
+        const task = tasks.find(t => t.id === taskId);
+        if (task && task.checklist) { 
+            const isDone = !task.checklist[checkIdx].done;
+            task.checklist[checkIdx].done = isDone; 
+            
+            window.addSystemLog(taskId, `${isDone ? 'concluiu' : 'desmarcou'} a etapa: <i>${task.checklist[checkIdx].text}</i>`);
+
+            if (isCloudActive && auth.currentUser) {
+                const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', taskId);
+                setDoc(taskRef, { checklist: task.checklist }, { merge: true });
+            } else {
+                window.renderTasks();
+            }
+        }
+    };
+
+    window.renderTasks = function() {
+        const filterCycle = document.getElementById('filter-cycle')?.value || 'all';
+        const filterArea = document.getElementById('filter-area')?.value || 'all';
+        const filterOwner = document.getElementById('filter-owner')?.value || 'all';
+        const filterText = (document.getElementById('filter-text')?.value || '').toLowerCase();
+        
+        const filtered = tasks.filter(t => {
+            const matchCycle = filterCycle === 'all' || t.cycle === filterCycle || (t.isFixed && filterCycle === 'Geral');
+            const matchArea = filterArea === 'all' || t.area === filterArea;
+            const matchOwner = filterOwner === 'all' || t.owner === filterOwner;
+            const plainDesc = t.desc ? stripHtml(t.desc).toLowerCase() : '';
+            const matchText = filterText === '' || t.title.toLowerCase().includes(filterText) || plainDesc.includes(filterText);
+            return matchCycle && matchArea && matchOwner && matchText;
+        });
+
+        filtered.sort((a, b) => {
+            if (a.priority === 'critical' && b.priority !== 'critical') return -1;
+            if (a.priority !== 'critical' && b.priority === 'critical') return 1;
+            if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+            if (a.dueDate && !b.dueDate) return -1;
+            if (!a.dueDate && b.dueDate) return 1;
+            return 0;
+        });
+
+        if (currentViewMode === 'kanban') renderKanban(filtered);
+        else renderList(filtered);
+
+        if(typeof window.renderReports === 'function') window.renderReports();
+    };
+
+    window.renderReports = function() {
+        if(!document.getElementById('tab-reports') || document.getElementById('tab-reports').classList.contains('hidden')) return;
+
+        const today = new Date().toISOString().split('T')[0];
+
+        let done = 0, inProgress = 0, delayed = 0;
+        let pillarCounts = {};
+        sysSettings.scope.forEach(p => pillarCounts[p.id] = 0);
+        
+        let teamStats = {};
+        sysSettings.team.forEach(m => teamStats[m.id] = { name: m.name, initials: m.initials, total: 0, done: 0, delayed: 0 });
+
+        tasks.forEach(t => {
+            if (t.status === 'done') done++;
+            else if (t.status === 'todo' || t.status === 'review') inProgress++;
+
+            if (t.dueDate && t.dueDate < today && t.status !== 'done') delayed++;
+
+            if (pillarCounts[t.area] !== undefined) pillarCounts[t.area]++;
+            else pillarCounts[t.area] = 1; 
+
+            if (teamStats[t.owner]) {
+                teamStats[t.owner].total++;
+                if (t.status === 'done') teamStats[t.owner].done++;
+                if (t.dueDate && t.dueDate < today && t.status !== 'done') teamStats[t.owner].delayed++;
+            }
+        });
+
+        const kpiContainer = document.getElementById('report-kpis');
+        if (kpiContainer) {
+            kpiContainer.innerHTML = `
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-emerald-100 dark:border-emerald-900/30 shadow-sm relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 text-emerald-50 dark:text-emerald-900/20"><i data-lucide="check-circle" class="w-24 h-24"></i></div>
+                    <p class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1 relative z-10">Concluídas</p>
+                    <h4 class="text-4xl font-black text-emerald-600 dark:text-emerald-400 relative z-10">${done}</h4>
+                </div>
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-blue-100 dark:border-blue-900/30 shadow-sm relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 text-blue-50 dark:text-blue-900/20"><i data-lucide="loader" class="w-24 h-24"></i></div>
+                    <p class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1 relative z-10">Em Andamento</p>
+                    <h4 class="text-4xl font-black text-blue-600 dark:text-blue-400 relative z-10">${inProgress}</h4>
+                </div>
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border ${delayed > 0 ? 'border-rose-300 dark:border-rose-700 bg-rose-50/50 dark:bg-rose-900/20' : 'border-slate-200 dark:border-slate-700'} shadow-sm relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 ${delayed > 0 ? 'text-rose-100 dark:text-rose-900/30' : 'text-slate-100 dark:text-slate-800/50'}"><i data-lucide="alert-triangle" class="w-24 h-24"></i></div>
+                    <p class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1 relative z-10">Atrasadas</p>
+                    <h4 class="text-4xl font-black ${delayed > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-600 dark:text-slate-400'} relative z-10">${delayed}</h4>
+                </div>
+            `;
+        }
+
+        const pillarContainer = document.getElementById('report-pillars');
+        if (pillarContainer) {
+            const totalTasks = tasks.length || 1; 
+
+            pillarContainer.innerHTML = sysSettings.scope.map(p => {
+                const count = pillarCounts[p.id] || 0;
+                const percent = Math.round((count / totalTasks) * 100);
+                return `
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm font-bold text-slate-700 dark:text-slate-300">${p.title}</span>
+                            <span class="text-xs font-bold text-slate-500">${percent}% (${count})</span>
+                        </div>
+                        <div class="h-2.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div class="h-full bg-${p.color}-500 rounded-full transition-all duration-1000" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        const teamContainer = document.getElementById('report-team');
+        if (teamContainer) {
+            teamContainer.innerHTML = Object.values(teamStats).map(stat => {
+                return `
+                    <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border ${stat.delayed > 0 ? 'border-rose-200 dark:border-rose-900/50' : 'border-slate-100 dark:border-slate-700'}">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-700 dark:text-indigo-400 font-bold shrink-0">${stat.initials}</div>
+                            <div>
+                                <h4 class="font-bold text-slate-800 dark:text-slate-200 text-sm">${stat.name}</h4>
+                                <p class="text-xs text-slate-500">${stat.done} concluídas de ${stat.total} tarefas atribuídas</p>
+                            </div>
+                        </div>
+                        ${stat.delayed > 0 ? `<div class="px-3 py-1 bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 text-[10px] font-bold rounded-lg flex items-center gap-1 shadow-sm"><i data-lucide="alert-circle" class="w-3 h-3"></i> ${stat.delayed} Atrasadas</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+        lucide.createIcons();
+    };
+
+    function renderKanban(filteredTasks) {
+        const columns = ['backlog', 'todo', 'review', 'done'];
+        const counts = { backlog: 0, todo: 0, review: 0, done: 0 };
+        columns.forEach(col => document.getElementById(`col-${col}`).innerHTML = '');
+
+        const getAreaColorClass = (areaId) => {
+            const pillar = sysSettings.scope.find(p => p.id === areaId);
+            const color = pillar ? pillar.color : 'slate';
+            return `bg-${color}-50 dark:bg-${color}-900/30 text-${color}-600 dark:text-${color}-400`;
+        };
+        const getAreaLabel = (areaId) => {
+            const p = sysSettings.scope.find(x => x.id === areaId);
+            return p ? p.title : areaId;
+        };
+
+        const prioConfig = {
+            routine: { label: 'Rotina', icon: 'calendar', class: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' },
+            important: { label: 'Importante', icon: 'zap', class: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' },
+            critical: { label: 'Crítico', icon: 'flame', class: 'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400' }
+        };
+
+        filteredTasks.forEach(task => {
+            counts[task.status]++;
+            const checks = task.checklist || [];
+            const doneChecks = checks.filter(c => c.done).length;
+            const progress = checks.length > 0 ? (doneChecks / checks.length) * 100 : 0;
+
+            let dueDateHtml = '';
+            let isOverdue = false;
+            
+            if (task.dueDate) {
+                const today = new Date().toISOString().split('T')[0];
+                isOverdue = task.dueDate < today && task.status !== 'done';
+                const dateObj = new Date(task.dueDate + 'T12:00:00');
+                const dateStr = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '');
+                dueDateHtml = `<div class="flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-md border ${isOverdue ? 'border-rose-200 dark:border-rose-800/50 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}"><i data-lucide="calendar" class="w-3 h-3"></i> ${dateStr}</div>`;
+            }
+
+            const linksCount = task.links ? task.links.length : 0;
+            const linkBadgeHtml = linksCount > 0 ? `<div class="flex items-center gap-1 text-[9px] font-bold text-slate-500 dark:text-slate-400" title="${linksCount} anexo(s)"><i data-lucide="paperclip" class="w-3 h-3"></i> ${linksCount}</div>` : '';
+
+            const commentsCount = task.comments ? task.comments.filter(c => c.type !== 'system').length : 0;
+            const commentBadgeHtml = commentsCount > 0 ? `<div class="flex items-center gap-1 text-[9px] font-bold text-indigo-500 dark:text-indigo-400" title="${commentsCount} comentário(s)"><i data-lucide="message-square" class="w-3 h-3"></i> ${commentsCount}</div>` : '';
+
+            const pConf = prioConfig[task.priority] || prioConfig.routine;
+
+            const card = document.createElement('div');
+            card.className = `task-card bg-white dark:bg-slate-800 p-5 rounded-[1.5rem] shadow-sm border border-slate-200 dark:border-slate-700 relative group ${task.isFixed ? 'is-fixed' : ''} ${isOverdue ? 'is-overdue' : ''}`;
+            card.draggable = true;
+            card.ondragstart = (ev) => {
+                currentDragId = task.id;
+                if (ev.dataTransfer) ev.dataTransfer.setData('text/plain', task.id);
+            };
+            
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-3">
+                    <div class="flex items-center gap-2 flex-wrap">
+                         <span class="flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-lg ${pConf.class}"><i data-lucide="${pConf.icon}" class="w-3 h-3"></i> ${pConf.label}</span>
+                         <span class="text-[9px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-lg ${getAreaColorClass(task.area)}">${getAreaLabel(task.area)}</span>
+                         ${task.isFixed ? '<i data-lucide="pin" class="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400"></i>' : ''}
+                         ${isOverdue ? '<span class="bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400 text-[8px] font-black uppercase px-2 py-0.5 rounded-md animate-pulse">Atrasado</span>' : ''}
+                    </div>
+                    <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-50/80 dark:bg-slate-700/80 rounded-lg p-0.5 z-10 shrink-0">
+                        <button onclick="editTask('${task.id}')" class="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-1 rounded hover:bg-white dark:hover:bg-slate-600"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="duplicateTask('${task.id}')" class="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 p-1 rounded hover:bg-white dark:hover:bg-slate-600"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="deleteTask('${task.id}')" class="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-1 rounded hover:bg-white dark:hover:bg-slate-600"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                    </div>
+                </div>
+                <h4 class="text-sm font-bold text-slate-800 dark:text-slate-100 leading-tight mb-2 pr-2 cursor-pointer" onclick="editTask('${task.id}')">${task.title}</h4>
+                ${task.desc ? `<p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mb-3 cursor-pointer" onclick="editTask('${task.id}')">${stripHtml(task.desc)}</p>` : ''}
+                
+                ${checks.length > 0 ? `
+                    <div class="mb-4">
+                        <div class="flex justify-between items-center mb-1"><span class="text-[9px] font-bold text-slate-400">PROGRESSO</span><span class="text-[9px] font-bold text-slate-500">${doneChecks}/${checks.length}</span></div>
+                        <div class="h-1.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden flex">
+                            ${checks.map((c, i) => `<div onclick="toggleCheck('${task.id}', ${i})" class="h-full flex-1 border-r border-white/20 cursor-pointer hover:opacity-80 transition-opacity ${c.done ? 'bg-indigo-500 dark:bg-indigo-400' : 'bg-slate-200 dark:bg-slate-600'}"></div>`).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <div class="flex items-center justify-between pt-3 border-t border-slate-50 dark:border-slate-700/50 mt-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-600" title="Responsável: ${getOwnerInitials(task.owner)}">
+                            ${getOwnerInitials(task.owner)}
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        ${dueDateHtml}
+                        ${commentBadgeHtml}
+                        ${linkBadgeHtml}
+                        <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500">${task.cycle}</span>
+                    </div>
+                </div>
+            `;
+            document.getElementById(`col-${task.status}`).appendChild(card);
+        });
+
+        columns.forEach(col => document.getElementById(`count-${col}`).innerText = counts[col]);
+        lucide.createIcons();
+    }
+
+    function renderList(filteredTasks) {
+        const tbody = document.getElementById('list-body');
+        tbody.innerHTML = '';
+        const statusMap = {
+            'backlog': { label: 'A Fazer', class: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400' },
+            'todo': { label: 'Execução', class: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' },
+            'review': { label: 'Aguardando', class: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' },
+            'done': { label: 'Concluído', class: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' }
+        };
+        const getAreaLabel = (areaId) => {
+            const p = sysSettings.scope.find(x => x.id === areaId);
+            return p ? p.title : areaId;
+        };
+
+        const prioConfig = {
+            routine: { label: 'Rotina', icon: 'calendar', class: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' },
+            important: { label: 'Importante', icon: 'zap', class: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' },
+            critical: { label: 'Crítico', icon: 'flame', class: 'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400' }
+        };
+
+        filteredTasks.forEach(task => {
+            const checks = task.checklist || [];
+            const doneChecks = checks.filter(c => c.done).length;
+            const progressText = checks.length > 0 ? `(${doneChecks}/${checks.length})` : '';
+
+            const linksCount = task.links ? task.links.length : 0;
+            const linkBadgeList = linksCount > 0 ? `<i data-lucide="paperclip" class="w-3.5 h-3.5 inline-block text-indigo-400 ml-1" title="${linksCount} anexo(s)"></i>` : '';
+
+            const commentsCount = task.comments ? task.comments.filter(c => c.type !== 'system').length : 0;
+            const commentBadgeList = commentsCount > 0 ? `<i data-lucide="message-square" class="w-3.5 h-3.5 inline-block text-indigo-500 ml-1" title="${commentsCount} comentário(s)"></i>` : '';
+
+            let dateStr = '-';
+            let isOverdue = false;
+            if(task.dueDate) {
+                isOverdue = task.dueDate < new Date().toISOString().split('T')[0] && task.status !== 'done';
+                const d = new Date(task.dueDate + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+                dateStr = `<span class="${isOverdue ? 'text-rose-500 dark:text-rose-400 font-bold bg-rose-50 dark:bg-rose-900/20 px-2 py-1 rounded-md' : 'text-slate-500'}">${d}</span>`;
+            }
+
+            const pConf = prioConfig[task.priority] || prioConfig.routine;
+            const prioBadgeList = `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[8px] font-bold ${pConf.class} ml-2 uppercase" title="Prioridade: ${pConf.label}"><i data-lucide="${pConf.icon}" class="w-2.5 h-2.5"></i> ${pConf.label}</span>`;
+
+            const tr = document.createElement('tr');
+            tr.className = `hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group ${isOverdue ? 'bg-rose-50/30 dark:bg-rose-900/10' : ''}`;
+            tr.innerHTML = `
+                <td class="px-6 py-4">
+                    <div class="flex items-center gap-2">
+                        ${task.isFixed ? '<i data-lucide="pin" class="w-3.5 h-3.5 text-indigo-500"></i>' : ''}
+                        <span class="font-bold text-slate-800 dark:text-slate-200 cursor-pointer flex items-center" onclick="editTask('${task.id}')">${task.title} ${prioBadgeList} ${linkBadgeList} ${commentBadgeList}</span>
+                        <span class="text-[10px] text-slate-400 ml-2">${progressText}</span>
+                    </div>
+                </td>
+                <td class="px-6 py-4">
+                    <span class="px-2 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-md text-xs font-bold">${getOwnerInitials(task.owner)}</span>
+                </td>
+                <td class="px-6 py-4 text-slate-500 dark:text-slate-400">${getAreaLabel(task.area)}</td>
+                <td class="px-6 py-4">
+                    <select onchange="changeTaskStatus('${task.id}', this.value)" class="text-xs font-bold px-2.5 py-1 rounded-lg outline-none cursor-pointer appearance-none ${statusMap[task.status].class}">
+                        <option value="backlog" ${task.status === 'backlog' ? 'selected' : ''}>A Fazer</option>
+                        <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>Execução</option>
+                        <option value="review" ${task.status === 'review' ? 'selected' : ''}>Aguardando</option>
+                        <option value="done" ${task.status === 'done' ? 'selected' : ''}>Concluído</option>
+                    </select>
+                </td>
+                <td class="px-6 py-4">${dateStr}</td>
+                <td class="px-6 py-4 text-slate-500 dark:text-slate-400">${task.cycle}</td>
+                <td class="px-6 py-4">
+                    <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onclick="editTask('${task.id}')" class="text-slate-400 hover:text-indigo-600"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                        <button onclick="duplicateTask('${task.id}')" class="text-slate-400 hover:text-blue-600"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                        <button onclick="deleteTask('${task.id}')" class="text-slate-400 hover:text-rose-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+        lucide.createIcons();
+ }
+
+    // Initialize System
+    initCloud();
+
+</script>
+</body>
+</html>
