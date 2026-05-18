@@ -721,8 +721,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
+import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'mkt-os-pro';
     const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { };
     const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
@@ -2887,37 +2886,46 @@
     // Initialize System
     initCloud();
 
-    // CORREÇÃO ENVIAR: Garante que cada computador gera uma demanda nova sem apagar a outra
+    // CORREÇÃO ENVIAR: Salva a nova demanda no Firestore com um ID automático
     if (typeof botao !== 'undefined') {
-      botao.addEventListener('click', () => {
+      botao.addEventListener('click', async () => {
         const texto = input.value;
-        if (texto.trim() !== "") {
-          // Usa a estrutura que o seu initCloud já configurou nos bastidores
-          const novaDemandaRef = database.ref('demandas/').push(); 
-          novaDemandaRef.set({
-            conteudo: texto,
-            timestamp: Date.now()
-          });
-          input.value = ""; 
+        if (texto.trim() !== "" && db) {
+          try {
+            // Cria um documento com ID aleatório dentro da coleção 'demandas'
+            await addDoc(collection(db, 'demandas'), {
+              conteudo: texto,
+              timestamp: Date.now()
+            });
+            input.value = ""; 
+          } catch (error) {
+            console.error("Erro ao enviar para o Firestore:", error);
+          }
         }
       });
     }
 
-    // CORREÇÃO RECEBER: Faz as duas telas lerem a lista ao mesmo tempo
-    if (typeof database !== 'undefined') {
-      database.ref('demandas/').on('value', (snapshot) => {
-        const dados = snapshot.val();
+    // CORREÇÃO RECEBER: Escuta a coleção 'demandas' do Firestore em tempo real
+    if (db) {
+      const demandasCol = collection(db, 'demandas');
+      onSnapshot(demandasCol, (snapshot) => {
         if (typeof mural !== 'undefined') {
           mural.innerHTML = ""; // Limpa a tela antes de carregar a lista nova
-          if (dados) {
-            Object.keys(dados).forEach((id) => {
-              mural.innerHTML += `<p style="margin: 0; padding: 5px 0; border-bottom: 1px solid #eee;"><strong>Demanda:</strong> ${dados[id].conteudo}</p>`;
+          
+          if (!snapshot.empty) {
+            snapshot.forEach((docSnap) => {
+              const dados = docSnap.data();
+              mural.innerHTML += `<p style="margin: 0; padding: 5px 0; border-bottom: 1px solid #eee;"><strong>Demanda:</strong> ${dados.conteudo}</p>`;
             });
           } else {
             mural.innerHTML = `<p style="color: #999; font-style: italic; margin: 0;">Nenhuma demanda cadastrada no momento.</p>`;
           }
-           });
-  </script>
+        }
+      }, (error) => {
+        console.error("Erro ao receber dados do Firestore:", error);
+      });
+    }
+        </script>
 </body>
 </html>
 
