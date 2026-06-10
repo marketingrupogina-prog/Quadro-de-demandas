@@ -2520,13 +2520,12 @@ window.renderModalChecklist = function() {
             if (isCloudActive && auth.currentUser) {
                 const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', currentId);
                 setDoc(taskRef, { checklist: task.checklist }, { merge: true });
-            }
-        currentChecklist = task.checklist ? JSON.parse(JSON.stringify(task.checklist)) : [];
-        window.renderModalChecklist();
+ currentChecklist = task.checklist ? JSON.parse(JSON.stringify(task.checklist)) : [];
+            currentLinks = task.links ? JSON.parse(JSON.stringify(task.links)) : [];
+            window.renderModalChecklist();
         }
     }
-   currentLinks = task.links ? JSON.parse(JSON.stringify(task.links)) : [];
- };
+};
         
         document.getElementById('task-chat-section').classList.remove('hidden');
         document.getElementById('task-chat-section').classList.add('flex');
