@@ -2397,30 +2397,19 @@ window.renderModalChecklist = function() {
         const isChecked = item.done ? 'checked' : '';
         const textClass = item.done ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-700 dark:text-slate-300';
         
-        htmlContent += '<div class="flex items-center justify-between bg-white dark:bg-slate-800 p-2 rounded-xl border border-indigo-100 dark:border-slate-700 animate-slideIn gap-3">';
-        htmlContent += '  <div class="flex items-center gap-2 flex-1 min-w-0">';
-        htmlContent += '    <input type="checkbox" ' + isChecked + ' onchange="window.updateModalChecklistState(' + i + ', this.checked)" class="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 cursor-pointer">';
-        htmlContent += '    <span class="text-sm font-medium truncate ' + textClass + '">' + item.text + '</span>';
-        htmlContent += '  </div>';
-        htmlContent += '  <button type="button" onclick="window.deleteChecklistItem(' + i + ')" class="text-rose-400 dark:text-rose-500 p-1 hover:text-rose-600 shrink-0 text-xs font-semibold">Deletar</button>';
-        htmlContent += '</div>';
+   htmlContent += "<div class='flex items-center justify-between bg-white dark:bg-slate-800 p-2 rounded-xl border border-indigo-100 dark:border-slate-700 animate-slideIn gap-3'>";
+        htmlContent += "  <div class='flex items-center gap-2 flex-1 min-w-0'>";
+        htmlContent += "    <input type='checkbox' " + isChecked + " onchange='window.updateModalChecklistState(" + i + ", this.checked)' class='w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 cursor-pointer'>";
+        htmlContent += "    <span class='text-sm font-medium truncate " + textClass + "'>" + item.text + "</span>";
+        htmlContent += "  </div>";
+        htmlContent += "  <button type='button' onclick='window.deleteChecklistItem(" + i + ")' class='text-rose-400 dark:text-rose-500 p-1 hover:text-rose-600 shrink-0 text-xs font-semibold'>Deletar</button>";
+        htmlContent += "</div>";
+        htmlContent += "</div>";
     }
     
     document.getElementById('checklist-items').innerHTML = htmlContent;
     lucide.createIcons();
 };
-};
-            <button type="button" onclick="window.deleteChecklistItem('${activeTaskId}', ${idx})" class="text-rose-400 dark:text-rose-500 p-1 hover:text-rose-600 shrink-0 text-xs font-semibold">Deletar</button>
-        </div>
-    `).join('');
-    lucide.createIcons();
-};
-        }
-    }
-    // 4. Redesenha o modal para riscar o texto na hora
-    window.renderModalChecklist();
-};
-
 window.deleteChecklistItem = function(idx) {
     currentChecklist.splice(idx, 1);
     
