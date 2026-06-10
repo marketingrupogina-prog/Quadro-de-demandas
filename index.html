@@ -2341,40 +2341,46 @@
     };
 
     window.addChecklistItem = function() {
-        const input = document.getElementById('new-check-item');
-        if (input.value.trim()) { currentChecklist.push({ text: input.value.trim(), done: false }); input.value = ''; window.renderModalChecklist(); }
-    };
-window.updateModalChecklistState = function(idx, isChecked) {
-    // 1. Atualiza a lista temporária do modal
+  window.updateModalChecklistState = function(idx, isChecked) {
+
+ window.updateModalChecklistState = function(idx, isChecked) {
+    // 1. Atualiza o estado na lista do modal
     currentChecklist[idx].done = isChecked;
     
-    // 2. Procura a tarefa real que está aberta no modal para salvar nela
-    const editingId = document.getElementById('edit-task-id').value;
-    if (editingId) {
-        const task = tasks.find(t => t.id === editingId);
+    // 2. Descobre o ID da tarefa que está aberta no modal
+    const currentId = document.getElementById('edit-task-id') ? document.getElementById('edit-task-id').value : '';
+    
+    if (currentId) {
+        const task = tasks.find(t => t.id === currentId);
         if (task) {
             task.checklist = [...currentChecklist];
-         // 3. Salva direto na nuvem se ativo, e força o Kanban a atualizar no fundo
-        if (isCloudActive && auth.currentUser) {
-            const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', editingId);
-            setDoc(taskRef, { checklist: task.checklist }, { merge: true });
+            
+            // 3. Salva imediatamente no Firebase (Nuvem)
+            if (isCloudActive && auth.currentUser) {
+                const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', currentId);
+                setDoc(taskRef, { checklist: task.checklist }, { merge: true });
+            }
+            
+            // 4. Faz a barrinha de progresso do Kanban andar na hora lá no fundo
+            window.renderTasks();
         }
-        window.renderTasks();
     }
-    // 4. Redesenha o modal para riscar o texto na hora
+    // 5. Redesenha o modal para aplicar o risco (line-through) no texto
     window.renderModalChecklist();
 };
 
 window.deleteChecklistItem = function(idx) {
+    // 1. Remove o item da lista temporária
     currentChecklist.splice(idx, 1);
     
-    const editingId = document.getElementById('edit-task-id').value;
-    if (editingId) {
-        const task = tasks.find(t => t.id === editingId);
+    // 2. Sincroniza com a tarefa e a nuvem
+    const currentId = document.getElementById('edit-task-id') ? document.getElementById('edit-task-id').value : '';
+    if (currentId) {
+        const task = tasks.find(t => t.id === currentId);
         if (task) {
             task.checklist = [...currentChecklist];
             if (isCloudActive && auth.currentUser) {
-                const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', editingId);
+                const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', currentId);
                 setDoc(taskRef, { checklist: task.checklist }, { merge: true });
             }
             window.renderTasks();
@@ -2382,12 +2388,29 @@ window.deleteChecklistItem = function(idx) {
     }
     window.renderModalChecklist();
 };
-        <div class="flex items-center justify-between bg-white dark:bg-slate-800 p-2 rounded-xl border border-indigo-100 dark:border-slate-700 animate-slideIn gap-3">
-            <div class="flex items-center gap-2 flex-1 min-w-0">
-                <input type="checkbox" ${item.done ? 'checked' : ''} onchange="window.updateModalChecklistState(${idx}, this.checked)" class="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 cursor-pointer">
-                <span class="text-sm font-medium text-slate-700 dark:text-slate-300 truncate ${item.done ? 'line-through text-slate-400 dark:text-slate-500' : ''}">${item.text}</span>
-            </div>
-            <button type="button" onclick="window.deleteChecklistItem(${idx})" class="text-rose-400 dark:text-rose-500 p-1 hover:text-rose-600 shrink-0 text-xs font-semibold">Deletar</button>
+
+window.renderModalChecklist = function() {
+    let htmlContent = '';
+    
+    for (let i = 0; i < currentChecklist.length; i++) {
+        const item = currentChecklist[i];
+        const isChecked = item.done ? 'checked' : '';
+        const textClass = item.done ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-700 dark:text-slate-300';
+        
+        htmlContent += '<div class="flex items-center justify-between bg-white dark:bg-slate-800 p-2 rounded-xl border border-indigo-100 dark:border-slate-700 animate-slideIn gap-3">';
+        htmlContent += '  <div class="flex items-center gap-2 flex-1 min-w-0">';
+        htmlContent += '    <input type="checkbox" ' + isChecked + ' onchange="window.updateModalChecklistState(' + i + ', this.checked)" class="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 cursor-pointer">';
+        htmlContent += '    <span class="text-sm font-medium truncate ' + textClass + '">' + item.text + '</span>';
+        htmlContent += '  </div>';
+        htmlContent += '  <button type="button" onclick="window.deleteChecklistItem(' + i + ')" class="text-rose-400 dark:text-rose-500 p-1 hover:text-rose-600 shrink-0 text-xs font-semibold">Deletar</button>';
+        htmlContent += '</div>';
+    }
+    
+    document.getElementById('checklist-items').innerHTML = htmlContent;
+    lucide.createIcons();
+};
+};
+            <button type="button" onclick="window.deleteChecklistItem('${activeTaskId}', ${idx})" class="text-rose-400 dark:text-rose-500 p-1 hover:text-rose-600 shrink-0 text-xs font-semibold">Deletar</button>
         </div>
     `).join('');
     lucide.createIcons();
