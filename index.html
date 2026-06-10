@@ -721,24 +721,33 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'mkt-os-pro';
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { };
-    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+    import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const appId = 'mkt-os-pro';
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAiN4gvnPwaqUhbGLXaBZUSHgI1lgpiJpg",
+        authDomain: "mkt-os-pro.firebaseapp.com",
+        databaseURL: "https://mkt-os-pro-default-rtdb.firebaseio.com",
+        projectId: "mkt-os-pro",
+        storageBucket: "mkt-os-pro.firebasestorage.app",
+        messagingSenderId: "750482528302",
+        appId: "1:750482528302:web:d5d8fc47f592a27c0b67bf"
+    };
+
+    const initialAuthToken = null;
 
     let app, auth, db;
     let isCloudActive = false;
 
     try {
-        if (Object.keys(firebaseConfig).length > 0) {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-            isCloudActive = true;
-        } else {
-            console.warn("Firebase config não encontrada. Rodando em modo local offline.");
-        }
-    } catch(e) { console.error("Firebase init erro", e); }
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+        isCloudActive = true;
+    } catch(e) {
+        console.error("Firebase init erro", e);
+    }
 
     const CURRENT_USER_KEY = 'mkt_os_pro_current_user';
     let currentUserRole = localStorage.getItem(CURRENT_USER_KEY);
