@@ -724,7 +724,15 @@
     import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'mkt-os-pro';
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { };
+const firebaseConfig = {
+  apiKey: "AIzaSyAiN4gvnPwaqUhbGLXaBZUSHgI1lgpiJpg",
+  authDomain: "mkt-os-pro.firebaseapp.com",
+  databaseURL: "https://mkt-os-pro-default-rtdb.firebaseio.com",
+  projectId: "mkt-os-pro",
+  storageBucket: "mkt-os-pro.firebasestorage.app",
+  messagingSenderId: "750482528302",
+  appId: "1:750482528302:web:d5d8fc47f592a27c0b67bf"
+};   
     const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
     let app, auth, db;
