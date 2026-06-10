@@ -2511,23 +2511,22 @@ window.renderModalChecklist = function() {
     };
 
     window.editTask = function(id) {
-        const task = tasks.find(t => t.id === id);
-        if(!task) return;
-        document.getElementById('edit-task-id').value = task.id;
-        document.getElementById('task-title').value = task.title;
-        document.getElementById('task-desc').innerHTML = task.desc || ''; 
-        document.getElementById('task-area').value = task.area;
-        document.getElementById('task-priority').value = task.priority;
-        if(sysSettings.team.some(m => m.id === task.owner)) document.getElementById('task-owner').value = task.owner;
-        if(sysSettings.cycles.some(c => c.name === task.cycle)) document.getElementById('task-cycle').value = task.cycle;
-        document.getElementById('task-due-date').value = task.dueDate || '';
-        document.getElementById('task-is-fixed').checked = task.isFixed || false;
-        
+      // Atualiza a tarefa real após deletar
+    const currentId = document.getElementById('edit-task-id')?.value;
+    if (currentId) {
+        const task = tasks.find(t => t.id === currentId);
+        if (task) {
+            task.checklist = [...currentChecklist];
+            if (isCloudActive && auth.currentUser) {
+                const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', currentId);
+                setDoc(taskRef, { checklist: task.checklist }, { merge: true });
+            }
         currentChecklist = task.checklist ? JSON.parse(JSON.stringify(task.checklist)) : [];
         window.renderModalChecklist();
-        
-        currentLinks = task.links ? JSON.parse(JSON.stringify(task.links)) : [];
-        window.renderModalLinks();
+        }
+    }
+   currentLinks = task.links ? JSON.parse(JSON.stringify(task.links)) : [];
+ };
         
         document.getElementById('task-chat-section').classList.remove('hidden');
         document.getElementById('task-chat-section').classList.add('flex');
