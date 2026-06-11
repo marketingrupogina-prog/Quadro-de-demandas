@@ -31,28 +31,40 @@
         .is-fixed { border-left: 6px solid #4f46e5 !important; }
         .drag-over { background-color: rgba(79, 70, 229, 0.05); border: 2px dashed #6366f1 !important; }
         .dark .drag-over { background-color: rgba(79, 70, 229, 0.15); border-color: #818cf8 !important; }
-        
-        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-slideIn { animation: slideIn 0.3s ease-out forwards; }
-        
-        @keyframes pulse-border-red { 0% { border-color: #fca5a5; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { border-color: #ef4444; box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } 100% { border-color: #fca5a5; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
-        .is-overdue { animation: pulse-border-red 2s infinite; border-width: 2px !important; }
-        .dark .is-overdue { animation-name: pulse-border-red-dark; }
-        @keyframes pulse-border-red-dark { 0% { border-color: #991b1b; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { border-color: #ef4444; box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } 100% { border-color: #991b1b; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
-        .custom-editor[placeholder]:empty:before { content: attr(placeholder); color: #94a3b8; pointer-events: none; }
-        .custom-editor ul { list-style-type: disc; padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
-        .custom-editor ol { list-style-type: decimal; padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
-        .custom-editor b { font-weight: 800; }
-        .custom-editor i { font-style: italic; }
-        .custom-editor u { text-decoration: underline; }
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-slideIn { animation: slideIn 0.3s ease-out forwards; }
 
-        #cloud-loader { transition: opacity 0.3s; }
-        .spinner { border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; width: 20px; height: 20px; animation: spin 1s ease-in-out infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        
-        .bg-pattern { background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 20px 20px; }
-        .dark .bg-pattern { background-image: radial-gradient(#334155 1px, transparent 1px); }
+@keyframes pulse-border-red { 
+    0% { border-color: #fca5a5; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 
+    70% { border-color: #ef4444; box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } 
+    100% { border-color: #fca5a5; } 
+}
+.is-overdue { animation: pulse-border-red 2s infinite; border-width: 2px !important; }
+.dark .is-overdue { animation-name: pulse-border-red-dark; }
+
+@keyframes pulse-border-red-dark { 
+    0% { border-color: #991b1b; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 
+    70% { border-color: #ef4444; box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } 
+    100% { border-color: #991b1b; } 
+}
+
+.custom-editor[placeholder]:empty:before { content: attr(placeholder); color: #94a3b8; pointer-events: none; }
+.custom-editor ul { list-style-type: disc; padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
+.custom-editor ol { list-style-type: decimal; padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
+.custom-editor b { font-weight: 800; }
+.custom-editor i { font-style: italic; }
+.custom-editor u { text-decoration: underline; }
+
+#cloud-loader { transition: opacity 0.3s; }
+.spinner { border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; width: 20px; height: 20px; animation: spin 1s ease-in-out infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.bg-pattern { background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 20px 20px; }
+.dark .bg-pattern { background-image: radial-gradient(#334155 1px, transparent 1px); }
     </style>
 </head>
 <body class="text-slate-900 dark:text-slate-200 bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
