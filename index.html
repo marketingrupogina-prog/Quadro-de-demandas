@@ -2352,9 +2352,8 @@
                 <button type="button" onclick="currentChecklist.splice(${idx}, 1); renderModalChecklist();" class="text-rose-400 dark:text-rose-500 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </div>
         `).join('');
-        lucide.createIcons();
-    };
-
+lucide.init();
+    };
     window.submitTaskForm = function(e) {
         e.preventDefault();
         
