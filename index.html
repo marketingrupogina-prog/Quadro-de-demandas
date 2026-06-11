@@ -2907,46 +2907,6 @@ lucide.init();
 
     // Initialize System
     initCloud();
-
-    // CORREÇÃO ENVIAR: Salva a nova demanda no Firestore com um ID automático
-    if (typeof botao !== 'undefined') {
-      botao.addEventListener('click', async () => {
-        const texto = input.value;
-        if (texto.trim() !== "" && db) {
-          try {
-            // Cria um documento com ID aleatório dentro da coleção 'demandas'
-            await addDoc(collection(db, 'demandas'), {
-              conteudo: texto,
-              timestamp: Date.now()
-            });
-            input.value = ""; 
-          } catch (error) {
-            console.error("Erro ao enviar para o Firestore:", error);
-          }
-        }
-      });
-    }
-
-    // CORREÇÃO RECEBER: Escuta a coleção 'demandas' do Firestore em tempo real
-    if (db) {
-      const demandasCol = collection(db, 'demandas');
-      onSnapshot(demandasCol, (snapshot) => {
-        if (typeof mural !== 'undefined') {
-          mural.innerHTML = ""; // Limpa a tela antes de carregar a lista nova
-          
-          if (!snapshot.empty) {
-            snapshot.forEach((docSnap) => {
-              const dados = docSnap.data();
-              mural.innerHTML += `<p style="margin: 0; padding: 5px 0; border-bottom: 1px solid #eee;"><strong>Demanda:</strong> ${dados.conteudo}</p>`;
-            });
-          } else {
-            mural.innerHTML = `<p style="color: #999; font-style: italic; margin: 0;">Nenhuma demanda cadastrada no momento.</p>`;
-          }
-        }
-      }, (error) => {
-        console.error("Erro ao receber dados do Firestore:", error);
-      });
-    }
         </script>
 </body>
 </html>
